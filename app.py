@@ -177,7 +177,7 @@ def admin():
     conn.close()
 
     return render_template(
-        "admin/index.html",
+        "admin/dashboard.html",
         misas=misas,
         usuarios=usuarios,
         categorias=categorias,
