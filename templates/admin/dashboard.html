@@ -30,6 +30,29 @@
   </div>
   <div class="col-md-6">
     <h4>Misas</h4>
+
+<form action="/admin" method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <input type="date" name="dia" class="form-control" value="{{ dia }}">
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary">Filtrar</button>
+    </div>
+</form>
+
+<ul class="list-group">
+    {% if misas|length == 0 %}
+        <li class="list-group-item">No hay misas para esta fecha.</li>
+    {% else %}
+        {% for m in misas %}
+        <li class="list-group-item d-flex justify-content-between">
+            {{ m.fecha }} - {{ m.hora }} {{ m.ampm }}
+            <a class="btn btn-sm btn-danger" href="/admin/misas/delete/{{ m.id }}">Eliminar</a>
+        </li>
+        {% endfor %}
+    {% endif %}
+</ul>
+
     <form class="row g-2" action="/admin/misas/create" method="post">
       <div class="col-4"><input class="form-control" type="date" name="fecha" required></div>
       <div class="col-4"><input class="form-control" name="hora" placeholder="07:00" required></div>
