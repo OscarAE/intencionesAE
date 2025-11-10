@@ -226,11 +226,16 @@ def admin_toggle_user(user_id):
 @login_required(role="admin")
 def admin_delete_user(user_id):
 
+    # impedir que se elimine a sí mismo
+    if session["user_id"] == user_id:
+        flash("No puede eliminarse a usted mismo.")
+        return redirect("/admin")
+
     conn = get_db()
     cur = conn.cursor()
 
-    # Verificar rol del usuario que se intenta eliminar
-    cur.execute("SELECT role FROM users WHERE id=?", (user_id,))
+    # obtener información del usuario
+    cur.execute("SELECT role, active FROM users WHERE id=?", (user_id,))
     row = cur.fetchone()
 
     if not row:
@@ -238,19 +243,20 @@ def admin_delete_user(user_id):
         conn.close()
         return redirect("/admin")
 
-    # Evitar eliminar administradores
+    # impedir eliminar administradores
     if row["role"] == "admin":
-        flash("No es posible eliminar administradores. Solo se pueden activar o inactivar.")
+        flash("No es posible eliminar administradores. Solo se puede activar/inactivar.")
         conn.close()
         return redirect("/admin")
 
-    # Permitido si es funcionario
+    # eliminar (solo funcionarios)
     cur.execute("DELETE FROM users WHERE id=?", (user_id,))
     conn.commit()
     conn.close()
 
     flash("Usuario eliminado correctamente.")
     return redirect("/admin")
+
 
 # ============================================================
 #  CRUD MISAS
