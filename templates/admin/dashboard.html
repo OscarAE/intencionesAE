@@ -100,29 +100,79 @@
 <hr class="my-4">
 
 {% if section == "usuarios" %}
-<h3>Usuarios</h3>
-<table class="table table-striped">
-    <thead>
+<h3 class="mb-3">Usuarios del Sistema</h3>
+
+<table class="table table-hover align-middle">
+    <thead class="table-light">
         <tr>
-            <th>Usuario</th><th>Rol</th><th>Activo</th><th>Acciones</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th class="text-center">Acciones</th>
         </tr>
     </thead>
+
     <tbody>
-        {% for u in users %}
+    {% for u in users %}
         <tr>
-            <td>{{ u.username }}</td>
-            <td>{{ u.role }}</td>
-            <td>{{ "Sí" if u.active else "No" }}</td>
+
+            <!-- Ícono según tipo -->
             <td>
-                <a href="/admin/users/toggle/{{ u.id }}" class="btn btn-sm btn-warning">Activar/Desactivar</a>
-                <a href="/admin/users/delete/{{ u.id }}" class="btn btn-sm btn-danger"
-                   onclick="return confirm('¿Eliminar usuario?')">Eliminar</a>
+                {% if u.role == 'admin' %}
+                    <i class="bi bi-shield-lock-fill text-primary me-2"></i>
+                {% else %}
+                    <i class="bi bi-person-fill text-secondary me-2"></i>
+                {% endif %}
+                {{ u.username }}
+            </td>
+
+            <!-- Rol -->
+            <td>
+                {% if u.role == 'admin' %}
+                    <span class="badge bg-primary">Administrador</span>
+                {% else %}
+                    <span class="badge bg-secondary">Funcionario</span>
+                {% endif %}
+            </td>
+
+            <!-- Estado -->
+            <td>
+                {% if u.active %}
+                    <span class="badge bg-success">Activo</span>
+                {% else %}
+                    <span class="badge bg-danger">Inactivo</span>
+                {% endif %}
+            </td>
+
+            <!-- Acciones -->
+            <td class="text-center">
+
+                <!-- Botón Activar / Inactivar -->
+                <a href="/admin/users/toggle/{{ u.id }}"
+                   class="btn btn-sm btn-warning me-1">
+                    Activar / Inactivar
+                </a>
+
+                <!-- SOLO funcionarios pueden eliminarse -->
+                {% if u.role != 'admin' %}
+                    <a href="/admin/users/delete/{{ u.id }}"
+                       class="btn btn-sm btn-danger"
+                       onclick="return confirm('¿Eliminar este usuario?')">
+                        Eliminar
+                    </a>
+                {% else %}
+                    <!-- Icono de candado si es admin -->
+                    <i class="bi bi-lock-fill text-muted" title="No se puede eliminar un administrador"></i>
+                {% endif %}
+
             </td>
         </tr>
-        {% endfor %}
+    {% endfor %}
     </tbody>
 </table>
+
 {% endif %}
+
 
 {% if section == "crear_usuario" %}
 <h3>Crear Usuario</h3>
