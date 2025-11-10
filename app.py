@@ -141,19 +141,19 @@ def index():
 
 @app.route("/admin")
 @login_required(role="admin")
-def admin_dashboard():
+def admin():  # <-- Cambiado de admin_dashboard a admin
     conn = get_db()
     cur = conn.cursor()
 
     # Misas ordenadas por fecha y luego por hora AM/PM
     cur.execute("""
-    SELECT *
-    FROM misas
-    ORDER BY 
-        fecha ASC,
-        CASE ampm WHEN 'AM' THEN 0 ELSE 1 END,
-        substr(hora,1,2) + 0,
-        substr(hora,4,2) + 0
+        SELECT *
+        FROM misas
+        ORDER BY 
+            fecha ASC,
+            CASE ampm WHEN 'AM' THEN 0 ELSE 1 END,
+            substr(hora,1,2) + 0,
+            substr(hora,4,2) + 0
     """)
     misas = cur.fetchall()
 
