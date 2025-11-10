@@ -55,7 +55,15 @@
 
     <form class="row g-2" action="/admin/misas/create" method="post">
       <div class="col-4"><input class="form-control" type="date" name="fecha" required></div>
-      <div class="col-4"><input id="hora_input" class="form-control" name="hora" placeholder="07:00" maxlength="5" pattern="^\d{2}:?\d{2}$" required inputmode="numeric" autocomplete="off"></div>
+      <div class="col-4"><input id="hora_input"
+       class="form-control"
+       name="hora"
+       placeholder="07:00"
+       maxlength="5"
+       inputmode="numeric"
+       autocomplete="off"
+       required>
+      </div>
       <div class="col-2">
         <select class="form-select" name="ampm"><option>AM</option><option>PM</option></select>
       </div>
