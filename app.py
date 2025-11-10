@@ -545,22 +545,35 @@ def admin_delete_range():
 @app.route("/funcionario")
 @login_required()
 def funcionario():
-    if session.get("role") not in ("funcionario","admin"):
+    if session.get("role") not in ("funcionario", "admin"):
         return "Acceso denegado", 403
 
     dia = request.args.get("dia", date.today().isoformat())
 
-    conn = get_db(); cur = conn.cursor()
+    conn = get_db()
+    cur = conn.cursor()
 
-    cur.execute("SELECT * FROM misas WHERE fecha=? ORDER BY hora", (dia,))
+    # Consultar misas ordenadas por hora y AM/PM correctamente
+    cur.execute("""
+        SELECT *
+        FROM misas
+        WHERE fecha=?
+        ORDER BY 
+            CASE ampm WHEN 'AM' THEN 0 ELSE 1 END,
+            substr(hora,1,2) + 0,
+            substr(hora,4,2) + 0
+    """, (dia,))
     misas = cur.fetchall()
 
+    # Categorías activas
     cur.execute("SELECT * FROM categorias WHERE active=1 ORDER BY nombre")
     categorias = cur.fetchall()
 
+    # Intenciones base activas
     cur.execute("SELECT * FROM intencion_base WHERE active=1 ORDER BY frase")
     int_b = cur.fetchall()
 
+    # Intenciones propias del funcionario
     cur.execute("""
         SELECT i.*, c.nombre AS categoria, b.frase AS int_base
         FROM intenciones i
@@ -581,6 +594,7 @@ def funcionario():
         propias=propias,
         dia=dia
     )
+
 
 # ============================================================
 #  REGISTRAR INTENCIÓN
