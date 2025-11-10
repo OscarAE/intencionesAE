@@ -855,6 +855,15 @@ def debug_intenciones():
     conn.close()
 
     return str(rows)
+    
+@app.route("/debug_int")
+def debug_int():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM intenciones LIMIT 20")
+    rows = cur.fetchall()
+    conn.close()
+    return str(rows)
 
 # ============================================================
 #  EJECUCIÓN LOCAL
