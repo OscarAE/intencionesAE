@@ -10,6 +10,11 @@ DB = os.path.join(APP_DIR, "data.db")
 app = Flask(__name__)
 app.secret_key = "CAMBIAR_POR_ALGO_SEGURO"
 
+# Mostrar errores completos en el navegador
+app.config["DEBUG"] = True
+app.config["TESTING"] = True
+
+
 # ============================================================
 #  FUNCIONES BASE DE BASE DE DATOS
 # ============================================================
