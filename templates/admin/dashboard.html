@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Panel de Administración</h2>
+<div class="row">
+  <div class="col-md-6">
+    <h4>Usuarios</h4>
+    <form class="row g-2" action="/admin/users/create" method="post">
+      <div class="col"><input class="form-control" name="username" placeholder="usuario" required></div>
+      <div class="col"><input class="form-control" name="password" placeholder="clave" required></div>
+      <div class="col">
+        <select class="form-select" name="role">
+          <option value="funcionario">Funcionario</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+      <div class="col"><button class="btn btn-success">Crear</button></div>
+    </form>
+    <table class="table table-sm mt-2">
+      <thead><tr><th>Usuario</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr><td>{{ u.username }}</td><td>{{ u.role }}</td><td>{{ u.active }}</td>
+        <td>
+          <a class="btn btn-sm btn-secondary" href="/admin/users/toggle/{{ u.id }}">Toggle</a>
+          <a class="btn btn-sm btn-danger" href="/admin/users/delete/{{ u.id }}">Eliminar</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-6">
+    <h4>Misass</h4>
+    <form class="row g-2" action="/admin/misas/create" method="post">
+      <div class="col-4"><input class="form-control" type="date" name="fecha" required></div>
+      <div class="col-4"><input class="form-control" name="hora" placeholder="07:00" required></div>
+      <div class="col-2">
+        <select class="form-select" name="ampm"><option>AM</option><option>PM</option></select>
+      </div>
+      <div class="col-2"><button class="btn btn-primary">Crear</button></div>
+    </form>
+    <ul class="list-group mt-2">
+      {% for m in misas %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ m.fecha }} - {{ m.hora }} {{ m.ampm }}
+          <a class="btn btn-sm btn-danger" href="/admin/misas/delete/{{ m.id }}">Eliminar</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+<hr>
+<div class="row">
+  <div class="col-md-6">
+    <h4>Categorías</h4>
+    <form action="/admin/categorias/create" method="post">
+      <div class="mb-2"><input class="form-control" name="nombre" placeholder="Nombre" required></div>
+      <div class="mb-2"><input class="form-control" name="descripcion" placeholder="Descripción"></div>
+      <div class="mb-2"><textarea class="form-control" name="texto_adicional" placeholder="Texto adicional para PDF"></textarea></div>
+      <button class="btn btn-success">Crear categoría</button>
+    </form>
+    <ul class="list-group mt-2">
+      {% for c in categorias %}
+        <li class="list-group-item">
+          <strong>{{ c.nombre }}</strong> - {{ c.descripcion }}
+          <form class="d-inline float-end" action="/admin/categorias/delete/{{ c.id }}">
+            <button class="btn btn-sm btn-danger">Eliminar</button>
+          </form>
+          <form class="mt-2" action="/admin/categorias/edit/{{ c.id }}" method="post">
+            <input class="form-control form-control-sm mb-1" name="nombre" value="{{ c.nombre }}">
+            <input class="form-control form-control-sm mb-1" name="descripcion" value="{{ c.descripcion }}">
+            <textarea class="form-control form-control-sm mb-1" name="texto_adicional">{{ c.texto_adicional }}</textarea>
+            <button class="btn btn-sm btn-primary">Guardar</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="col-md-6">
+    <h4>Frases (Intención base)</h4>
+    <form action="/admin/intencion_base/create" method="post" class="input-group mb-2">
+      <input class="form-control" name="frase" placeholder="Ej: Por la salud de" required>
+      <button class="btn btn-success">Crear</button>
+    </form>
+    <ul class="list-group">
+      {% for b in int_base %}
+        <li class="list-group-item d-flex justify-content-between">
+          {{ b.frase }}
+          <a class="btn btn-sm btn-danger" href="/admin/intencion_base/delete/{{ b.id }}">Eliminar</a>
+        </li>
+      {% endfor %}
+    </ul>
+    <hr>
+    <h5>Texto global para PDF</h5>
+    <form action="/admin/settings/pdf_text" method="post">
+      <textarea class="form-control mb-2" name="pdf_texto_global">{{ global_text }}</textarea>
+      <button class="btn btn-primary">Guardar texto global</button>
+    </form>
+    <hr>
+    <h5>Exportar CSV (admin)</h5>
+    <form action="/admin/export_csv" method="post" class="row g-2">
+      <div class="col"><input class="form-control" type="date" name="desde" required></div>
+      <div class="col"><input class="form-control" type="date" name="hasta" required></div>
+      <div class="col"><button class="btn btn-outline-primary">Exportar</button></div>
+    </form>
+    <h5 class="mt-3">Eliminar por rango (desde última eliminación)</h5>
+    <p>Última eliminación: {{ last_deletion }}</p>
+    <form action="/admin/delete_range" method="post" onsubmit="return confirm('¿Seguro? Asegúrese de exportar antes.')">
+      <div class="row g-2">
+        <div class="col"><input class="form-control" type="date" name="hasta" required></div>
+        <div class="col"><button class="btn btn-danger">Eliminar</button></div>
+      </div>
+    </form>
+    <p class="mt-3"><a class="btn btn-secondary" href="/admin/seed">Cargar datos de ejemplo</a></p>
+  </div>
+</div>
+{% endblock %}

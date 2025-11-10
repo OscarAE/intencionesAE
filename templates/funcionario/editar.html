@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>Editar Intención</h3>
+<form method="post">
+  <div class="mb-2">
+    <label>Categoría</label>
+    <select class="form-select" name="categoria_id">
+      {% for c in categorias %}<option value="{{ c.id }}" {% if c.id==row.categoria_id %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="mb-2">
+    <label>Ofrece</label>
+    <input class="form-control" name="ofrece" value="{{ row.ofrece }}">
+  </div>
+  <div class="mb-2">
+    <label>Intención base</label>
+    <select class="form-select" name="int_base_id">
+      {% for b in int_b %}<option value="{{ b.id }}" {% if b.id==row.intencion_base_id %}selected{% endif %}>{{ b.frase }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="mb-2">
+    <label>Peticiones (máx 250)</label>
+    <textarea class="form-control" name="peticiones" maxlength="250">{{ row.peticiones }}</textarea>
+  </div>
+  <button class="btn btn-primary">Guardar cambios</button>
+  <a class="btn btn-secondary" href="/funcionario">Volver</a>
+</form>
+{% endblock %}

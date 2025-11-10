@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>Registro de Intenciones</h3>
+<div class="card mb-3 p-3">
+  <form class="row g-2" action="/funcionario" method="get">
+    <div class="col-auto">
+      <label class="form-label">Fecha</label>
+      <input class="form-control" type="date" name="dia" value="{{ dia }}">
+    </div>
+    <div class="col-auto align-self-end">
+      <button class="btn btn-primary">Cargar misas</button>
+    </div>
+  </form>
+</div>
+<div class="card mb-3 p-3">
+  <h5>Registrar nueva intención</h5>
+  <form action="/funcionario/registrar" method="post">
+    <div class="mb-2">
+      <label>Hora de la misa (seleccione una)</label>
+      <select class="form-select" name="misa_id" required>
+        <option value="">--Seleccione--</option>
+        {% for m in misas %}
+          <option value="{{ m.id }}">{{ m.hora }} {{ m.ampm }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-2 row">
+      <div class="col">
+        <label>Categoría</label>
+        <select class="form-select" name="categoria_id" required>
+          {% for c in categorias %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col">
+        <label>Ofrece (nombre)</label>
+        <input class="form-control" name="ofrece" required>
+      </div>
+    </div>
+    <div class="mb-2">
+      <label>Intención ofrecida a</label>
+      <select class="form-select" name="int_base_id" required>
+        {% for b in int_b %}<option value="{{ b.id }}">{{ b.frase }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="mb-2">
+      <label>Peticiones (máx 250 caracteres)</label>
+      <textarea class="form-control" name="peticiones" maxlength="250" required></textarea>
+    </div>
+    <button class="btn btn-success">Guardar intención</button>
+  </form>
+</div>
+<div class="card p-3">
+  <h5>Mis intenciones</h5>
+  <table class="table table-sm">
+    <thead><tr><th>Misa</th><th>Categoría</th><th>Ofrece</th><th>Intención</th><th>Acciones</th></tr></thead>
+    <tbody>
+      {% for i in propias %}
+      <tr>
+        <td>
+          {% set m_id = i.misa_id %}
+          {% for m in misas %}
+            {% if m.id == m_id %}
+              {{ m.hora }} {{ m.ampm }} ({{ m.fecha }})
+            {% endif %}
+          {% endfor %}
+        </td>
+        <td>{{ i.categoria }}</td>
+        <td>{{ i.ofrece }}</td>
+        <td>{{ i.int_base }} - {{ i.peticiones }}</td>
+        <td>
+          <a class="btn btn-sm btn-primary" href="/funcionario/editar/{{ i.id }}">Editar</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <hr>
+  <h6>Exportar mis intenciones (CSV)</h6>
+  <form action="/funcionario/export_csv" method="post" class="row g-2">
+    <div class="col"><input class="form-control" type="date" name="desde" required></div>
+    <div class="col"><input class="form-control" type="date" name="hasta" required></div>
+    <div class="col"><button class="btn btn-outline-primary">Exportar CSV</button></div>
+  </form>
+  <hr>
+  <h6>Imprimir PDF de un día (todas las misas)</h6>
+  <form action="/funcionario/print_day" method="post" class="row g-2">
+    <div class="col"><input class="form-control" type="date" name="dia" value="{{ dia }}" required></div>
+    <div class="col"><button class="btn btn-outline-success">Generar PDF</button></div>
+  </form>
+</div>
+{% endblock %}
