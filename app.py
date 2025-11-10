@@ -147,13 +147,13 @@ def admin_dashboard():
 
     # Misas ordenadas por fecha y luego por hora AM/PM
     cur.execute("""
-        SELECT *
-        FROM misas
-        ORDER BY 
-            fecha ASC,
-            CASE ampm WHEN 'AM' THEN 0 ELSE 1 END,
-            substr(hora,1,2) + 0,
-            substr(hora,4,2) + 0
+    SELECT *
+    FROM misas
+    ORDER BY 
+        fecha ASC,
+        CASE ampm WHEN 'AM' THEN 0 ELSE 1 END,
+        substr(hora,1,2) + 0,
+        substr(hora,4,2) + 0
     """)
     misas = cur.fetchall()
 
