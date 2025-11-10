@@ -881,6 +881,25 @@ def debug_int_raw():
     rows = cur.fetchall()
     conn.close()
     return f"COLUMNAS:\n{cols}\n\nDATOS:\n{rows}"
+@app.route("/debug_int_raw2")
+def debug_int_raw2():
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Ver las columnas
+    cur.execute("PRAGMA table_info(intenciones)")
+    columnas = cur.fetchall()
+
+    # Ver todos los registros
+    cur.execute("SELECT * FROM intenciones")
+    registros = cur.fetchall()
+
+    conn.close()
+
+    return {
+        "columnas": [dict(row) for row in columnas],
+        "registros": [dict(row) for row in registros]
+    }
 
 # ============================================================
 #  EJECUCIÓN LOCAL
