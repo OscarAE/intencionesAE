@@ -135,5 +135,64 @@
 
 })();
 </script>
+    <script>
+(function(){
+  const input = document.getElementById('hora_input');
+  if (!input) return;
+
+  input.addEventListener('input', function(e){
+    let v = this.value.replace(/\D/g, ''); // solo dígitos
+
+    // limitar a 4 dígitos HHMM
+    if (v.length > 4) v = v.slice(0,4);
+
+    // insertar ":"
+    if (v.length >= 3) {
+      v = v.slice(0,2) + ":" + v.slice(2);
+    }
+
+    this.value = v;
+
+    // mover caret al final
+    setTimeout(() => {
+        this.selectionStart = this.selectionEnd = this.value.length;
+    }, 0);
+  });
+
+  // Validación real al perder el foco
+  input.addEventListener('blur', function(){
+    const val = this.value;
+    if (!val || val.length !== 5 || val.indexOf(":") !== 2) return;
+
+    let [hh, mm] = val.split(":");
+    hh = parseInt(hh, 10);
+    mm = parseInt(mm, 10);
+
+    // Validación HH
+    if (isNaN(hh) || hh < 0 || hh > 23) {
+        alert("La hora debe estar entre 00 y 23.");
+        this.value = "";
+        this.focus();
+        return;
+    }
+
+    // Validación MM
+    if (isNaN(mm) || mm < 0 || mm > 59) {
+        alert("Los minutos deben estar entre 00 y 59.");
+        this.value = "";
+        this.focus();
+        return;
+    }
+
+    // Reconstruir siempre en formato HH:MM con ceros
+    const hh_fix = (hh < 10 ? "0" : "") + hh;
+    const mm_fix = (mm < 10 ? "0" : "") + mm;
+
+    this.value = `${hh_fix}:${mm_fix}`;
+  });
+
+})();
+</script>
+
   </body>
 </html>
