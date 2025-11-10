@@ -141,49 +141,43 @@ def index():
 
 @app.route("/admin")
 @login_required(role="admin")
-def admin():
-    section = request.args.get("section")
+def admin_dashboard():
+    conn = get_db()
+    cur = conn.cursor()
 
-    conn = get_db(); cur = conn.cursor()
+    # Misas ordenadas por fecha y luego por hora AM/PM
+    cur.execute("""
+        SELECT *
+        FROM misas
+        ORDER BY 
+            fecha ASC,
+            CASE ampm WHEN 'AM' THEN 0 ELSE 1 END,
+            substr(hora,1,2) + 0,
+            substr(hora,4,2) + 0
+    """)
+    misas = cur.fetchall()
 
     # Usuarios
     cur.execute("SELECT * FROM users ORDER BY username")
-    users = cur.fetchall()
-
-    # Misas
-    cur.execute("SELECT * FROM misas ORDER BY fecha, hora")
-    misas = cur.fetchall()
+    usuarios = cur.fetchall()
 
     # Categorías
     cur.execute("SELECT * FROM categorias ORDER BY nombre")
     categorias = cur.fetchall()
 
-    # Frases base
+    # Intenciones base
     cur.execute("SELECT * FROM intencion_base ORDER BY frase")
-    frases = cur.fetchall()
-
-    # Configuración
-    cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
-    row = cur.fetchone()
-    texto_global = row["value"] if row else ""
-
-    cur.execute("SELECT value FROM settings WHERE key='last_deletion'")
-    row = cur.fetchone()
-    last_deletion = row["value"] if row else "Nunca"
+    int_b = cur.fetchall()
 
     conn.close()
 
     return render_template(
-        "admin/dashboard.html",
-        section=section,
-        users=users,
+        "admin/index.html",
         misas=misas,
+        usuarios=usuarios,
         categorias=categorias,
-        frases=frases,
-        texto_global=texto_global,
-        last_deletion=last_deletion
+        int_b=int_b
     )
-
 
 # ============================================================
 #  CRUD USUARIOS
