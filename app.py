@@ -277,25 +277,27 @@ def admin_create_misa():
     ampm = request.form["ampm"]
 
     # Convertir formato 4 dígitos a HH:MM
-h = hora.strip()
+    h = hora.strip()
 
-if len(h) == 4 and h.isdigit():
-    # Ejemplo: 0700 → 07:00
-    h = h[:2] + ":" + h[2:]
+    if len(h) == 4 and h.isdigit():
+        # Ejemplo: 0700 → 07:00
+        h = h[:2] + ":" + h[2:]
 
-try:
-    dt = datetime.strptime(h, "%H:%M")
-    hora_24 = dt.strftime("%H:%M")
-except:
-    flash("Formato de hora inválido. Use 4 números (ej: 0700).")
-    return redirect("/admin")
+    try:
+        dt = datetime.strptime(h, "%H:%M")
+        hora_24 = dt.strftime("%H:%M")
+    except:
+        flash("Formato de hora inválido. Use 4 números (ej: 0700).")
+        return redirect("/admin")
 
-
-    conn = get_db(); cur = conn.cursor()
-    cur.execute("INSERT INTO misas(fecha,hora,ampm) VALUES (?,?,?)", (fecha,hora_24,ampm))
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO misas(fecha,hora,ampm) VALUES (?,?,?)", (fecha, hora_24, ampm))
     conn.commit()
     conn.close()
+
     return redirect("/admin")
+
 
 @app.route("/admin/misas/delete/<int:misa_id>")
 @login_required(role="admin")
