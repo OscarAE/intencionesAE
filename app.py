@@ -276,11 +276,20 @@ def admin_create_misa():
     hora = request.form["hora"]
     ampm = request.form["ampm"]
 
-    try:
-        dt = datetime.strptime(hora, "%H:%M")
-        hora_24 = dt.strftime("%H:%M")
-    except:
-        hora_24 = hora
+    # Convertir formato 4 dígitos a HH:MM
+h = hora.strip()
+
+if len(h) == 4 and h.isdigit():
+    # Ejemplo: 0700 → 07:00
+    h = h[:2] + ":" + h[2:]
+
+try:
+    dt = datetime.strptime(h, "%H:%M")
+    hora_24 = dt.strftime("%H:%M")
+except:
+    flash("Formato de hora inválido. Use 4 números (ej: 0700).")
+    return redirect("/admin")
+
 
     conn = get_db(); cur = conn.cursor()
     cur.execute("INSERT INTO misas(fecha,hora,ampm) VALUES (?,?,?)", (fecha,hora_24,ampm))
