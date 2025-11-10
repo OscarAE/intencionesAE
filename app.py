@@ -142,13 +142,55 @@ def index():
 @app.route("/admin")
 @login_required(role="admin")
 def admin():
-    conn = get_db(); cur = conn.cursor()
+    dia = request.args.get("dia")
 
+    conn = get_db()
+    cur = conn.cursor()
+
+    # usuarios
     cur.execute("SELECT * FROM users")
     users = cur.fetchall()
 
-    cur.execute("SELECT * FROM misas ORDER BY fecha, hora")
+    # filtrar misas por fecha
+    if dia:
+        cur.execute("SELECT * FROM misas WHERE fecha = ? ORDER BY hora", (dia,))
+    else:
+        # si no hay fecha, mostrar solo las de HOY
+        hoy = date.today().isoformat()
+        cur.execute("SELECT * FROM misas WHERE fecha = ? ORDER BY hora", (hoy,))
+        dia = hoy
+
     misas = cur.fetchall()
+
+    # categorías
+    cur.execute("SELECT * FROM categorias ORDER BY nombre")
+    categorias = cur.fetchall()
+
+    # frases base
+    cur.execute("SELECT * FROM intencion_base ORDER BY frase")
+    int_base = cur.fetchall()
+
+    # textos globales
+    cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
+    row = cur.fetchone()
+    global_text = row["value"] if row else ""
+
+    cur.execute("SELECT value FROM settings WHERE key='last_deletion'")
+    row = cur.fetchone()
+    last_deletion = row["value"] if row else "Nunca"
+
+    conn.close()
+
+    return render_template(
+        "admin/dashboard.html",
+        users=users,
+        misas=misas,
+        categorias=categorias,
+        int_base=int_base,
+        global_text=global_text,
+        last_deletion=last_deletion,
+        dia=dia
+    )
 
     cur.execute("SELECT * FROM categorias ORDER BY nombre")
     categorias = cur.fetchall()
