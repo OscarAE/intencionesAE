@@ -839,48 +839,7 @@ def funcionario_print_day():
         as_attachment=True,
         download_name=f"intenciones_{dia}.pdf"
     )
-@app.route("/debug_intenciones")
-def debug_intenciones():
-    conn = get_db()
-    cur = conn.cursor()
 
-    cur.execute("""
-        SELECT i.id, i.ofrece, i.peticiones, m.fecha, m.hora
-        FROM intenciones i
-        LEFT JOIN misas m ON m.id = i.misa_id
-        LIMIT 20
-    """)
-
-    rows = cur.fetchall()
-    conn.close()
-
-    return str(rows)
-@app.route("/debug_int")
-def debug_int():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM intenciones LIMIT 20")
-    rows = cur.fetchall()
-    conn.close()
-    return str(rows)
-@app.route("/debug_misas")
-def debug_misas():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM misas LIMIT 20")
-    rows = cur.fetchall()
-    conn.close()
-    return str(rows)
-@app.route("/debug_int_raw")
-def debug_int_raw():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("PRAGMA table_info(intenciones)")
-    cols = cur.fetchall()
-    cur.execute("SELECT * FROM intenciones LIMIT 20")
-    rows = cur.fetchall()
-    conn.close()
-    return f"COLUMNAS:\n{cols}\n\nDATOS:\n{rows}"
 @app.route("/debug_int_raw2")
 def debug_int_raw2():
     conn = get_db()
