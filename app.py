@@ -855,7 +855,6 @@ def debug_intenciones():
     conn.close()
 
     return str(rows)
-    
 @app.route("/debug_int")
 def debug_int():
     conn = get_db()
@@ -864,6 +863,24 @@ def debug_int():
     rows = cur.fetchall()
     conn.close()
     return str(rows)
+@app.route("/debug_misas")
+def debug_misas():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM misas LIMIT 20")
+    rows = cur.fetchall()
+    conn.close()
+    return str(rows)
+@app.route("/debug_int_raw")
+def debug_int_raw():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(intenciones)")
+    cols = cur.fetchall()
+    cur.execute("SELECT * FROM intenciones LIMIT 20")
+    rows = cur.fetchall()
+    conn.close()
+    return f"COLUMNAS:\n{cols}\n\nDATOS:\n{rows}"
 
 # ============================================================
 #  EJECUCIÓN LOCAL
