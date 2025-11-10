@@ -225,11 +225,31 @@ def admin_toggle_user(user_id):
 @app.route("/admin/users/delete/<int:user_id>")
 @login_required(role="admin")
 def admin_delete_user(user_id):
+
     conn = get_db()
     cur = conn.cursor()
+
+    # Verificar rol del usuario que se intenta eliminar
+    cur.execute("SELECT role FROM users WHERE id=?", (user_id,))
+    row = cur.fetchone()
+
+    if not row:
+        flash("Usuario no encontrado.")
+        conn.close()
+        return redirect("/admin")
+
+    # Evitar eliminar administradores
+    if row["role"] == "admin":
+        flash("No es posible eliminar administradores. Solo se pueden activar o inactivar.")
+        conn.close()
+        return redirect("/admin")
+
+    # Permitido si es funcionario
     cur.execute("DELETE FROM users WHERE id=?", (user_id,))
     conn.commit()
     conn.close()
+
+    flash("Usuario eliminado correctamente.")
     return redirect("/admin")
 
 # ============================================================
