@@ -7,69 +7,75 @@
 
     <!-- Usuarios -->
     <div class="col">
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card shadow-sm border-0 h-100 text-center">
             <div class="card-body">
+                <i class="bi bi-people-fill display-4 text-primary mb-3"></i>
                 <h4 class="card-title">Usuarios</h4>
-                <p class="card-text text-muted">Administrar los usuarios y permisos del sistema.</p>
-                <a href="/admin?section=crear_usuario" class="btn btn-primary btn-sm">Crear usuario</a>
-                <a href="/admin?section=usuarios" class="btn btn-outline-secondary btn-sm">Ver usuarios</a>
+                <p class="text-muted">Administrar los usuarios y sus permisos.</p>
+                <a href="/admin?section=crear_usuario" class="btn btn-primary btn-sm">Crear</a>
+                <a href="/admin?section=usuarios" class="btn btn-outline-secondary btn-sm">Consultar</a>
             </div>
         </div>
     </div>
 
     <!-- Misas -->
     <div class="col">
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card shadow-sm border-0 h-100 text-center">
             <div class="card-body">
+                <i class="bi bi-calendar-check display-4 text-success mb-3"></i>
                 <h4 class="card-title">Misas</h4>
-                <p class="card-text text-muted">Gestionar horarios de misas y fechas.</p>
-                <a href="/admin?section=crear_misa" class="btn btn-primary btn-sm">Crear misa</a>
-                <a href="/admin?section=misas" class="btn btn-outline-secondary btn-sm">Ver misas</a>
+                <p class="text-muted">Gestión de misas por fecha y hora.</p>
+                <a href="/admin?section=crear_misa" class="btn btn-primary btn-sm">Crear</a>
+                <a href="/admin?section=misas" class="btn btn-outline-secondary btn-sm">Consultar</a>
             </div>
         </div>
     </div>
 
     <!-- Categorías -->
     <div class="col">
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card shadow-sm border-0 h-100 text-center">
             <div class="card-body">
+                <i class="bi bi-tags-fill display-4 text-warning mb-3"></i>
                 <h4 class="card-title">Categorías</h4>
-                <p class="card-text text-muted">Administrar categorías para clasificar intenciones.</p>
-                <a href="/admin?section=crear_categoria" class="btn btn-primary btn-sm">Crear categoría</a>
-                <a href="/admin?section=categorias" class="btn btn-outline-secondary btn-sm">Ver categorías</a>
+                <p class="text-muted">Clasificación de intenciones.</p>
+                <a href="/admin?section=crear_categoria" class="btn btn-primary btn-sm">Crear</a>
+                <a href="/admin?section=categorias" class="btn btn-outline-secondary btn-sm">Consultar</a>
             </div>
         </div>
     </div>
 
-    <!-- Frases base -->
+    <!-- Frases -->
     <div class="col">
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card shadow-sm border-0 h-100 text-center">
             <div class="card-body">
+                <i class="bi bi-chat-left-text-fill display-4 text-info mb-3"></i>
                 <h4 class="card-title">Frases Base</h4>
-                <p class="card-text text-muted">Frases para completar la intención ofrecida.</p>
-                <a href="/admin?section=crear_frase" class="btn btn-primary btn-sm">Crear frase</a>
-                <a href="/admin?section=frases" class="btn btn-outline-secondary btn-sm">Ver frases base</a>
+                <p class="text-muted">Frases usadas en intenciones.</p>
+                <a href="/admin?section=crear_frase" class="btn btn-primary btn-sm">Crear</a>
+                <a href="/admin?section=frases" class="btn btn-outline-secondary btn-sm">Consultar</a>
             </div>
         </div>
     </div>
 
     <!-- Configuración -->
     <div class="col">
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card shadow-sm border-0 h-100 text-center">
             <div class="card-body">
+                <i class="bi bi-gear-fill display-4 text-secondary mb-3"></i>
                 <h4 class="card-title">Configuración</h4>
-                <p class="card-text text-muted">Textos globales, mensajes y opciones generales.</p>
-                <a href="/admin?section=config" class="btn btn-outline-secondary btn-sm">Abrir configuración</a>
+                <p class="text-muted">Ajustes y mensajes globales.</p>
+                <a href="/admin?section=config" class="btn btn-outline-secondary btn-sm">Abrir</a>
             </div>
         </div>
     </div>
 
     <!-- Exportaciones -->
     <div class="col">
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card shadow-sm border-0 h-100 text-center">
             <div class="card-body">
+                <i class="bi bi-download display-4 text-dark mb-3"></i>
                 <h4 class="card-title">Exportaciones</h4>
-                <p class="card-text text-muted">Descargar intenciones en CSV por rango de fechas.</p>
+                <p class="text-muted">Descargar CSV por rango de fechas.</p>
                 <a href="/admin?section=export" class="btn btn-outline-secondary btn-sm">Exportar CSV</a>
             </div>
         </div>
@@ -77,14 +83,18 @@
 
     <!-- Eliminación -->
     <div class="col">
-        <div class="card shadow-sm border-0 h-100">
+        <div class="card shadow-sm border-0 h-100 text-center">
             <div class="card-body">
-                <h4 class="card-title">Eliminación de datos</h4>
-                <p class="card-text text-muted">Eliminar intenciones antiguas por rango de fecha.</p>
-                <a href="/admin?section=delete" class="btn btn-danger btn-sm">Eliminar datos</a>
+                <i class="bi bi-trash-fill display-4 text-danger mb-3"></i>
+                <h4 class="card-title">Eliminación de Datos</h4>
+                <p class="text-muted">Eliminar intenciones antiguas.</p>
+                <a href="/admin?section=delete" class="btn btn-danger btn-sm">Eliminar</a>
             </div>
         </div>
     </div>
+
+</div>
+
 
 </div>
 <hr class="my-4">
