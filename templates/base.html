@@ -38,5 +38,78 @@
     {% endwith %}
     {% block content %}{% endblock %}
   </div>
+    <script>
+(function(){
+  const input = document.getElementById('hora_input');
+  if (!input) return;
+
+  // helper: set caret position
+  function setCaret(pos) {
+    try { input.setSelectionRange(pos, pos); }
+    catch(e){ /* algunos navegadores pueden fallar silenciosamente */ }
+  }
+
+  input.addEventListener('input', function(e){
+    // keep only digits
+    let digits = this.value.replace(/\D/g, '');
+    if (digits.length > 4) digits = digits.slice(0,4);
+
+    // build display value with colon after 2 digits
+    let display = digits;
+    if (digits.length > 2) display = digits.slice(0,2) + ':' + digits.slice(2);
+    // preserve previous length to decide caret behaviour
+    const prevLen = this.value.length;
+    this.value = display;
+
+    // move caret to end (so the cursor always moves right while typing)
+    // small timeout to ensure DOM updated
+    setTimeout(() => setCaret(this.value.length), 0);
+  });
+
+  // handle keydown for Backspace when colon is present
+  input.addEventListener('keydown', function(e){
+    const selStart = this.selectionStart;
+    const selEnd = this.selectionEnd;
+
+    // if backspace and caret is just after colon, move caret back one and remove digit before colon on next input
+    if (e.key === 'Backspace' && selStart === selEnd) {
+      if (selStart === 3 && this.value.charAt(2) === ':') {
+        // caret is after the colon (position 3)
+        // prevent default and set caret to before colon (position 2) so deleting behaves naturally
+        e.preventDefault();
+        setCaret(2);
+        // simulate deletion of previous digit by removing last digit before colon
+        const digits = this.value.replace(/\D/g,'').slice(0, -1);
+        let newVal = digits;
+        if (digits.length > 2) newVal = digits.slice(0,2) + ':' + digits.slice(2);
+        setTimeout(()=> { this.value = newVal; setCaret(this.value.length); }, 0);
+      }
+    }
+  });
+
+  // optional: prevent non-digit keys except control (allow navigation keys)
+  input.addEventListener('keypress', function(e){
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const key = e.key;
+    if (!/^\d$/.test(key)) {
+      // allow Enter, Tab, Arrow keys etc.
+      if (key.length === 1) e.preventDefault();
+    }
+  });
+
+  // handle paste: accept only numeric characters and reformat
+  input.addEventListener('paste', function(e){
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text');
+    const digits = paste.replace(/\D/g,'').slice(0,4);
+    let display = digits;
+    if (digits.length > 2) display = digits.slice(0,2) + ':' + digits.slice(2);
+    this.value = display;
+    setTimeout(()=> setCaret(this.value.length), 0);
+  });
+
+})();
+</script>
+
   </body>
 </html>
