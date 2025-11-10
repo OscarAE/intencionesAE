@@ -444,17 +444,24 @@ def admin_export_csv():
     desde = request.form["desde"]
     hasta = request.form["hasta"]
 
-    conn = get_db(); cur = conn.cursor()
+    conn = get_db()
+    cur = conn.cursor()
+
     cur.execute("""
-        SELECT i.*, c.nombre as categoria, b.frase as int_base,
-               u.username as funcionario, m.hora as misa_hora, m.fecha as misa_fecha
+        SELECT i.*, 
+               c.nombre AS categoria, 
+               b.frase AS int_base,
+               u.username AS funcionario, 
+               m.hora AS misa_hora, 
+               m.fecha AS misa_fecha
         FROM intenciones i
-        LEFT JOIN categorias c ON c.id=i.categoria_id
-        LEFT JOIN intencion_base b ON b.id=i.intencion_base_id
-        LEFT JOIN users u ON u.id=i.funcionario_id
-        LEFT JOIN misas m ON m.id=i.misa_id
-        WHERE date(m.fecha) BETWEEN date(?) AND date(?)
-        ORDER BY misa_fecha, misa_hora
+        LEFT JOIN categorias c ON c.id = i.categoria_id
+        LEFT JOIN intencion_base b ON b.id = i.intencion_base_id
+        LEFT JOIN users u ON u.id = i.funcionario_id
+        LEFT JOIN misas m ON m.id = i.misa_id
+        WHERE m.fecha >= ? 
+          AND m.fecha <= ?
+        ORDER BY m.fecha, m.hora
     """, (desde, hasta))
 
     rows = cur.fetchall()
@@ -462,24 +469,37 @@ def admin_export_csv():
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["misa_fecha","misa_hora","categoria","ofrece",
-                     "intencion_base","peticiones","funcionario",
-                     "fecha_creado","fecha_actualizado"])
 
+    # encabezados
+    writer.writerow([
+        "Fecha Misa", "Hora", "Categoría", "Ofrece",
+        "Frase Base", "Peticiones", "Funcionario",
+        "Fecha Creado", "Fecha Actualizado"
+    ])
+
+    # filas
     for r in rows:
         writer.writerow([
-            r["misa_fecha"], r["misa_hora"], r["categoria"], r["ofrece"],
-            r["int_base"], r["peticiones"], r["funcionario"],
-            r["fecha_creado"], r["fecha_actualizado"]
+            r["misa_fecha"], 
+            r["misa_hora"], 
+            r["categoria"], 
+            r["ofrece"],
+            r["int_base"], 
+            r["peticiones"], 
+            r["funcionario"],
+            r["fecha_creado"], 
+            r["fecha_actualizado"]
         ])
 
     output.seek(0)
+
     return send_file(
         io.BytesIO(output.getvalue().encode("utf-8")),
         mimetype="text/csv",
         as_attachment=True,
         download_name="intenciones_admin.csv"
     )
+
 
 # ============================================================
 #  BORRAR INTENCIONES POR RANGO
