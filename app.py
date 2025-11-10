@@ -839,6 +839,22 @@ def funcionario_print_day():
         as_attachment=True,
         download_name=f"intenciones_{dia}.pdf"
     )
+@app.route("/debug_intenciones")
+def debug_intenciones():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT i.id, i.ofrece, i.peticiones, m.fecha, m.hora
+        FROM intenciones i
+        LEFT JOIN misas m ON m.id = i.misa_id
+        LIMIT 20
+    """)
+
+    rows = cur.fetchall()
+    conn.close()
+
+    return str(rows)
 
 # ============================================================
 #  EJECUCIÓN LOCAL
