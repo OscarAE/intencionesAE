@@ -142,38 +142,30 @@ def index():
 @app.route("/admin")
 @login_required(role="admin")
 def admin():
-    dia = request.args.get("dia")
+    section = request.args.get("section")
 
-    conn = get_db()
-    cur = conn.cursor()
+    conn = get_db(); cur = conn.cursor()
 
-    # usuarios
-    cur.execute("SELECT * FROM users")
+    # Usuarios
+    cur.execute("SELECT * FROM users ORDER BY username")
     users = cur.fetchall()
 
-    # filtrar misas por fecha
-    if dia:
-        cur.execute("SELECT * FROM misas WHERE fecha = ? ORDER BY hora", (dia,))
-    else:
-        # si no hay fecha, mostrar solo las de HOY
-        hoy = date.today().isoformat()
-        cur.execute("SELECT * FROM misas WHERE fecha = ? ORDER BY hora", (hoy,))
-        dia = hoy
-
+    # Misas
+    cur.execute("SELECT * FROM misas ORDER BY fecha, hora")
     misas = cur.fetchall()
 
-    # categorías
+    # Categorías
     cur.execute("SELECT * FROM categorias ORDER BY nombre")
     categorias = cur.fetchall()
 
-    # frases base
+    # Frases base
     cur.execute("SELECT * FROM intencion_base ORDER BY frase")
-    int_base = cur.fetchall()
+    frases = cur.fetchall()
 
-    # textos globales
+    # Configuración
     cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
     row = cur.fetchone()
-    global_text = row["value"] if row else ""
+    texto_global = row["value"] if row else ""
 
     cur.execute("SELECT value FROM settings WHERE key='last_deletion'")
     row = cur.fetchone()
@@ -183,40 +175,15 @@ def admin():
 
     return render_template(
         "admin/dashboard.html",
+        section=section,
         users=users,
         misas=misas,
         categorias=categorias,
-        int_base=int_base,
-        global_text=global_text,
-        last_deletion=last_deletion,
-        dia=dia
-    )
-
-    cur.execute("SELECT * FROM categorias ORDER BY nombre")
-    categorias = cur.fetchall()
-
-    cur.execute("SELECT * FROM intencion_base ORDER BY frase")
-    int_base = cur.fetchall()
-
-    cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
-    row = cur.fetchone()
-    global_text = row["value"] if row else ""
-
-    cur.execute("SELECT value FROM settings WHERE key='last_deletion'")
-    row = cur.fetchone()
-    last_deletion = row["value"] if row else "Nunca"
-
-    conn.close()
-
-    return render_template(
-        "admin/dashboard.html",
-        users=users,
-        misas=misas,
-        categorias=categorias,
-        int_base=int_base,
-        global_text=global_text,
+        frases=frases,
+        texto_global=texto_global,
         last_deletion=last_deletion
     )
+
 
 # ============================================================
 #  CRUD USUARIOS
