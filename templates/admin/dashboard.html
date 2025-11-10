@@ -87,5 +87,207 @@
     </div>
 
 </div>
+<hr class="my-4">
+
+{% if section == "usuarios" %}
+<h3>Usuarios</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Usuario</th><th>Rol</th><th>Activo</th><th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in users %}
+        <tr>
+            <td>{{ u.username }}</td>
+            <td>{{ u.role }}</td>
+            <td>{{ "Sí" if u.active else "No" }}</td>
+            <td>
+                <a href="/admin/users/toggle/{{ u.id }}" class="btn btn-sm btn-warning">Activar/Desactivar</a>
+                <a href="/admin/users/delete/{{ u.id }}" class="btn btn-sm btn-danger"
+                   onclick="return confirm('¿Eliminar usuario?')">Eliminar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if section == "crear_usuario" %}
+<h3>Crear Usuario</h3>
+<form method="post" action="/admin/users/create" class="row g-3 mb-4">
+    <div class="col-md-4">
+        <label>Usuario</label>
+        <input name="username" class="form-control" required>
+    </div>
+    <div class="col-md-4">
+        <label>Contraseña</label>
+        <input name="password" type="password" class="form-control" required>
+    </div>
+    <div class="col-md-4">
+        <label>Rol</label>
+        <select name="role" class="form-select">
+            <option value="funcionario">Funcionario</option>
+            <option value="admin">Administrador</option>
+        </select>
+    </div>
+    <div class="col-12">
+        <button class="btn btn-primary">Crear</button>
+    </div>
+</form>
+{% endif %}
+
+{% if section == "misas" %}
+<h3>Misas</h3>
+<table class="table table-striped">
+    <tr><th>Fecha</th><th>Hora</th><th>AM/PM</th><th>Acciones</th></tr>
+    {% for m in misas %}
+    <tr>
+        <td>{{ m.fecha }}</td>
+        <td>{{ m.hora }}</td>
+        <td>{{ m.ampm }}</td>
+        <td>
+            <a href="/admin/misas/delete/{{ m.id }}" 
+               class="btn btn-sm btn-danger"
+               onclick="return confirm('¿Eliminar misa?')">Eliminar</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if section == "crear_misa" %}
+<h3>Crear Misa</h3>
+<form action="/admin/misas/create" method="post" class="row g-3">
+    <div class="col-md-4">
+        <label>Fecha</label>
+        <input type="date" name="fecha" class="form-control" required>
+    </div>
+    <div class="col-md-4">
+        <label>Hora (HHMM)</label>
+        <input id="hora_input" name="hora" class="form-control" placeholder="0700" required>
+    </div>
+    <div class="col-md-4">
+        <label>AM/PM</label>
+        <select name="ampm" class="form-select">
+            <option>AM</option>
+            <option>PM</option>
+        </select>
+    </div>
+    <div class="col-12">
+        <button class="btn btn-primary">Crear misa</button>
+    </div>
+</form>
+{% endif %}
+
+{% if section == "categorias" %}
+<h3>Categorías</h3>
+<table class="table table-striped">
+    <tr>
+        <th>Nombre</th><th>Descripción</th><th>Texto adicional</th><th>Acciones</th>
+    </tr>
+    {% for c in categorias %}
+    <tr>
+        <td>{{ c.nombre }}</td>
+        <td>{{ c.descripcion }}</td>
+        <td>{{ c.texto_adicional }}</td>
+        <td>
+            <a href="/admin/categorias/delete/{{ c.id }}" class="btn btn-sm btn-danger"
+               onclick="return confirm('¿Eliminar categoría?')">Eliminar</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if section == "crear_categoria" %}
+<h3>Crear Categoría</h3>
+<form action="/admin/categorias/create" method="post" class="row g-3">
+    <div class="col-md-6">
+        <label>Nombre</label>
+        <input name="nombre" class="form-control" required>
+    </div>
+    <div class="col-md-6">
+        <label>Descripción</label>
+        <input name="descripcion" class="form-control">
+    </div>
+    <div class="col-12">
+        <label>Texto adicional (PDF)</label>
+        <textarea name="texto_adicional" class="form-control"></textarea>
+    </div>
+    <div class="col-12">
+        <button class="btn btn-primary">Crear categoría</button>
+    </div>
+</form>
+{% endif %}
+
+{% if section == "frases" %}
+<h3>Frases Base</h3>
+<ul class="list-group">
+    {% for f in frases %}
+    <li class="list-group-item d-flex justify-content-between">
+        {{ f.frase }}
+        <a href="/admin/intencion_base/delete/{{ f.id }}" 
+           class="btn btn-sm btn-danger">Eliminar</a>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% if section == "crear_frase" %}
+<h3>Crear Frase Base</h3>
+<form action="/admin/intencion_base/create" method="post" class="row g-3">
+    <div class="col-md-12">
+        <label>Frase</label>
+        <input name="frase" class="form-control" required>
+    </div>
+    <div class="col-md-12">
+        <button class="btn btn-primary">Crear frase</button>
+    </div>
+</form>
+{% endif %}
+
+{% if section == "config" %}
+<h3>Configuración Global</h3>
+<form action="/admin/settings/pdf_text" method="post">
+    <label>Texto global para PDF</label>
+    <textarea name="pdf_texto_global" class="form-control mb-2">{{ texto_global }}</textarea>
+    <button class="btn btn-primary">Guardar cambios</button>
+</form>
+{% endif %}
+
+{% if section == "export" %}
+<h3>Exportar CSV</h3>
+<form action="/admin/export_csv" method="post" class="row g-3">
+    <div class="col-md-6">
+        <label>Desde</label>
+        <input type="date" name="desde" class="form-control" required>
+    </div>
+    <div class="col-md-6">
+        <label>Hasta</label>
+        <input type="date" name="hasta" class="form-control" required>
+    </div>
+    <div class="col-12">
+        <button class="btn btn-outline-primary">Exportar</button>
+    </div>
+</form>
+{% endif %}
+
+{% if section == "delete" %}
+<h3>Eliminar Intenciones</h3>
+<p>Última eliminación registrada: <strong>{{ last_deletion }}</strong></p>
+<form action="/admin/delete_range" method="post" 
+      onsubmit="return confirm('¿Seguro que desea eliminar este rango?')"
+      class="row g-3">
+    <div class="col-md-12">
+        <label>Eliminar hasta la fecha</label>
+        <input type="date" name="hasta" class="form-control" required>
+    </div>
+    <div class="col-12">
+        <button class="btn btn-danger">Eliminar</button>
+    </div>
+</form>
+{% endif %}
 
 {% endblock %}
