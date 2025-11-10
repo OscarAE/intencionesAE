@@ -209,18 +209,49 @@ def admin_create_user():
 @app.route("/admin/users/toggle/<int:user_id>")
 @login_required(role="admin")
 def admin_toggle_user(user_id):
-    conn = get_db(); cur = conn.cursor()
 
-    cur.execute("SELECT active FROM users WHERE id=?", (user_id,))
-    r = cur.fetchone()
+    conn = get_db()
+    cur = conn.cursor()
 
-    if r:
-        new = 0 if r["active"] == 1 else 1
-        cur.execute("UPDATE users SET active=? WHERE id=?", (new, user_id))
-        conn.commit()
+    # obtener info del usuario a cambiar
+    cur.execute("SELECT role, active FROM users WHERE id=?", (user_id,))
+    row = cur.fetchone()
 
+    if not row:
+        flash("Usuario no encontrado.")
+        conn.close()
+        return redirect("/admin")
+
+    role = row["role"]
+    active = row["active"]
+
+    # impedir que un admin se desactive a sí mismo
+    if session["user_id"] == user_id:
+        flash("No puede inactivarse a usted mismo.")
+        conn.close()
+        return redirect("/admin")
+
+    # si es admin, verificar que no se deje el sistema sin administradores
+    if role == "admin":
+        # contar admins activos
+        cur.execute("SELECT COUNT(*) as c FROM users WHERE role='admin' AND active=1")
+        count_admins = cur.fetchone()["c"]
+
+        # si solo hay 1 admin activo, no se puede inactivar
+        if count_admins <= 1 and active == 1:
+            flash("No se puede inactivar este administrador. Debe haber al menos un administrador activo.")
+            conn.close()
+            return redirect("/admin")
+
+    # cambiar estado
+    new = 0 if active == 1 else 1
+    cur.execute("UPDATE users SET active=? WHERE id=?", (new, user_id))
+    conn.commit()
     conn.close()
+
+    flash("Estado actualizado.")
     return redirect("/admin")
+
 
 @app.route("/admin/users/delete/<int:user_id>")
 @login_required(role="admin")
