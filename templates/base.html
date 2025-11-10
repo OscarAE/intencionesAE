@@ -110,6 +110,30 @@
 
 })();
 </script>
+<script>
+(function(){
+  const input = document.getElementById('hora_input');
+  if (!input) return;
 
+  input.addEventListener('input', function(e){
+    let v = this.value.replace(/\D/g,'');   // solo números
+
+    if(v.length > 4) v = v.slice(0,4);
+
+    // Construir formato HH:MM
+    if(v.length >= 3){
+        v = v.slice(0,2) + ":" + v.slice(2);
+    }
+
+    this.value = v;
+
+    // Mover el cursor siempre al final
+    setTimeout(() => {
+       this.selectionStart = this.selectionEnd = this.value.length;
+    }, 0);
+  });
+
+})();
+</script>
   </body>
 </html>
