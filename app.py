@@ -36,9 +36,10 @@ def init_db():
         nombre TEXT UNIQUE,
         descripcion TEXT,
         texto_adicional TEXT,
-        active INTEGER DEFAULT 1
+        active INTEGER DEFAULT 1,
+        orden INTEGER DEFAULT 0
     );
-
+        
     CREATE TABLE IF NOT EXISTS intencion_base (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         frase TEXT UNIQUE,
@@ -881,8 +882,8 @@ def funcionario_print_day():
     # construir la fecha final
     fecha_formateada = f"{dia_esp} {fecha_dt.day} DE {mes_esp} DE {fecha_dt.year}"
 
-    c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(w/2, y, f"INTENCIONES — {fecha_formateada}")
+    c.setFont("Helvetica-Bold", 10)
+    c.drawCentredString(w/2, y, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
     y -= 30
 
     # Texto global arriba
@@ -906,7 +907,7 @@ def funcionario_print_day():
             LEFT JOIN categorias c ON c.id=i.categoria_id
             LEFT JOIN intencion_base b ON b.id=i.intencion_base_id
             WHERE i.misa_id=?
-            ORDER BY i.fecha_creado ASC
+            ORDER BY c.orden ASC
         """, (misa["id"],))
 
         items = cur.fetchall()
