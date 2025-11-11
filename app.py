@@ -152,13 +152,18 @@ def admin():
 
     # Misas
     cur.execute("""
-        SELECT *
-        FROM misas
-        ORDER BY 
-            fecha ASC,
-            CASE ampm WHEN 'AM' THEN 0 ELSE 1 END,
-            CAST(substr(hora,1,2) AS INTEGER),
-            CAST(substr(hora,4,2) AS INTEGER)
+    SELECT *
+    FROM misas
+    ORDER BY 
+        fecha ASC,
+        CAST(
+            CASE
+                WHEN ampm = 'AM' AND substr(hora,1,2) = '12' THEN 0
+                WHEN ampm = 'PM' AND substr(hora,1,2) != '12' THEN CAST(substr(hora,1,2) AS INTEGER) + 12
+                ELSE CAST(substr(hora,1,2) AS INTEGER)
+            END
+        AS INTEGER),
+        CAST(substr(hora,4,2) AS INTEGER)
     """)
     misas = cur.fetchall()
 
