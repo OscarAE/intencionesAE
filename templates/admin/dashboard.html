@@ -312,7 +312,7 @@
 <h3>Configuración Global</h3>
 <form action="/admin/settings/pdf_text" method="post">
     <label>Texto global para PDF</label>
-    <textarea name="pdf_texto_global" class="form-control mb-2">{{ texto_global }}</textarea>
+    <textarea name="pdf_texto_global" class="form-control mb-2" oninput="soloMayusculasComasPuntos(this)">{{ texto_global }}</textarea>
     <button class="btn btn-primary">Guardar cambios</button>
 </form>
 {% endif %}
