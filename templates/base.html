@@ -198,11 +198,11 @@
 function soloMayusculasComasPuntos(input) {
     let valor = input.value;
 
-    // Convertir todo a MAYÚSCULAS
+    // Convertir todo a MAYÚSCULAS (incluye ñ → Ñ)
     valor = valor.toUpperCase();
 
-    // Eliminar todo lo que NO sea A-Z, espacio, coma o punto
-    valor = valor.replace(/[^A-Z .,]/g, '');
+    // Mantener solo: A-Z, Ñ, espacio, coma y punto
+    valor = valor.replace(/[^A-ZÑ .,]/g, '');
 
     input.value = valor;
 }
