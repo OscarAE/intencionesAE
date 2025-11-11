@@ -815,7 +815,7 @@ def funcionario_print_day():
 
     # Logo centrado
     try:
-        logo_width = 350
+        logo_width = 400
         logo_height = 80
         c.drawImage("static/titulo.png", (w-logo_width)/2, h-150, width=logo_width, height=logo_height)
     except:
@@ -899,7 +899,7 @@ def funcionario_print_day():
     fecha_imp = datetime.now().strftime("%A %d de %B de %Y a las %I:%M %p").capitalize()
 
     c.setFont("Helvetica", 9)
-    c.drawString(300, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
+    c.drawString(250, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
 
     c.save()
     buffer.seek(0)
