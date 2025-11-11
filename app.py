@@ -899,7 +899,7 @@ def funcionario_print_day():
     fecha_imp = datetime.now().strftime("%A %d de %B de %Y a las %I:%M %p").capitalize()
 
     c.setFont("Helvetica", 9)
-    c.drawString(40, 30, f"Impreso por: {usuario} — {fecha_imp}")
+    c.drawString(100, 50, f"Impreso por: {usuario} — {fecha_imp}")
 
     c.save()
     buffer.seek(0)
