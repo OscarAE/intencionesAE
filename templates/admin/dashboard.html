@@ -179,7 +179,7 @@
 <form method="post" action="/admin/users/create" class="row g-3 mb-4">
     <div class="col-md-4">
         <label>Usuario</label>
-        <input name="username" class="form-control" required>
+        <input name="username" class="form-control" oninput="soloMayusculasComasPuntos(this)" required>
     </div>
     <div class="col-md-4">
         <label>Contraseña</label>
@@ -266,11 +266,11 @@
 <form action="/admin/categorias/create" method="post" class="row g-3">
     <div class="col-md-6">
         <label>Nombre</label>
-        <input name="nombre" class="form-control" required>
+        <input name="nombre" class="form-control" oninput="soloMayusculasComasPuntos(this)" required>
     </div>
     <div class="col-md-6">
         <label>Descripción</label>
-        <input name="descripcion" class="form-control">
+        <input name="descripcion" class="form-control" oninput="soloMayusculasComasPuntos(this)" required>
     </div>
     <div class="col-12">
         <label>Texto adicional (PDF)</label>
@@ -300,7 +300,7 @@
 <form action="/admin/intencion_base/create" method="post" class="row g-3">
     <div class="col-md-12">
         <label>Frase</label>
-        <input name="frase" class="form-control" required>
+        <input name="frase" class="form-control" oninput="soloMayusculasComasPuntos(this)" required>
     </div>
     <div class="col-md-12">
         <button class="btn btn-primary">Crear frase</button>
