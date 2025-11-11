@@ -816,7 +816,7 @@ def funcionario_print_day():
     # Logo centrado
     try:
         logo_width = 400
-        logo_height = 40
+        logo_height = 5
         c.drawImage("static/titulo.png", (w-logo_width)/2, h-150, width=logo_width, height=logo_height)
     except:
         pass
