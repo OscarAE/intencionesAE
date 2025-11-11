@@ -840,7 +840,47 @@ def funcionario_print_day():
     
     # convertir a formato "MIÉRCOLES 11 DE OCTUBRE DE 2025"
     fecha_formateada = fecha_dt.strftime("%A %d de %B de %Y").upper()
+
+    # --- TRADUCCIÓN MANUAL DÍAS Y MESES ---
+    dias = {
+        "Monday": "LUNES",
+        "Tuesday": "MARTES",
+        "Wednesday": "MIÉRCOLES",
+        "Thursday": "JUEVES",
+        "Friday": "VIERNES",
+        "Saturday": "SÁBADO",
+        "Sunday": "DOMINGO"
+    }
     
+    meses = {
+        "January": "ENERO",
+        "February": "FEBRERO",
+        "March": "MARZO",
+        "April": "ABRIL",
+        "May": "MAYO",
+        "June": "JUNIO",
+        "July": "JULIO",
+        "August": "AGOSTO",
+        "September": "SEPTIEMBRE",
+        "October": "OCTUBRE",
+        "November": "NOVIEMBRE",
+        "December": "DICIEMBRE"
+    }
+    
+    # convertir el string 2025-10-11 a datetime
+    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
+    
+    # obtener valores en inglés
+    dia_ing = fecha_dt.strftime("%A")
+    mes_ing = fecha_dt.strftime("%B")
+    
+    # traducirlos usando los diccionarios
+    dia_esp = dias[dia_ing]
+    mes_esp = meses[mes_ing]
+    
+    # construir la fecha final
+    fecha_formateada = f"{dia_esp} {fecha_dt.day} DE {mes_esp} DE {fecha_dt.year}"
+
     c.setFont("Helvetica-Bold", 16)
     c.drawCentredString(w/2, y, f"INTENCIONES — {fecha_formateada}")
     y -= 30
