@@ -817,7 +817,7 @@ def funcionario_print_day():
     try:
         logo_width = 120
         logo_height = 120
-        c.drawImage("static/logo.png", (w-logo_width)/2, h-150, width=logo_width, height=logo_height)
+        c.drawImage("static/titulo.png", (w-logo_width)/2, h-150, width=logo_width, height=logo_height)
     except:
         pass
 
