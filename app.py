@@ -821,7 +821,7 @@ def funcionario_print_day():
     except:
         pass
 
-    y = h - 125
+    y = h - 130
 
     from datetime import datetime
     import locale
@@ -966,7 +966,7 @@ def funcionario_print_day():
     fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
 
     c.setFont("Helvetica-Bold", 9)
-    c.drawString(245, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
+    c.drawString(240, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
 
     c.save()
     buffer.seek(0)
