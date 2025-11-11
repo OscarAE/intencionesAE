@@ -816,12 +816,12 @@ def funcionario_print_day():
     # Logo centrado
     try:
         logo_width = 400
-        logo_height = 80
+        logo_height = 40
         c.drawImage("static/titulo.png", (w-logo_width)/2, h-150, width=logo_width, height=logo_height)
     except:
         pass
 
-    y = h - 180
+    y = h - 120
 
     c.setFont("Helvetica-Bold", 16)
     c.drawCentredString(w/2, y, f"INTENCIONES — {dia}")
