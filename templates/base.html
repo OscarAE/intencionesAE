@@ -202,7 +202,7 @@ function soloMayusculasComasPuntos(input) {
     valor = valor.toUpperCase();
 
     // Mantener solo: A-Z, Ñ, espacio, coma y punto
-    valor = valor.replace(/[^A-ZÑ .,]/g, '');
+    valor = valor.replace(/[^A-ZÑ .,:]/g, '');
 
     input.value = valor;
 }
