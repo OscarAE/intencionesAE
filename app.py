@@ -10,10 +10,6 @@ DB = os.path.join(APP_DIR, "data.db")
 app = Flask(__name__)
 app.secret_key = "CAMBIAR_POR_ALGO_SEGURO"
 
-# Mostrar errores completos en el navegador
-app.config["DEBUG"] = True
-app.config["TESTING"] = True
-
 # ============================================================
 #  FUNCIONES BASE DE BASE DE DATOS
 # ============================================================
@@ -146,42 +142,48 @@ def index():
 @app.route("/admin")
 @login_required(role="admin")
 def admin():
-    conn = get_db()
-    cur = conn.cursor()
+    section = request.args.get("section")
 
-    # Misas ordenadas por fecha y luego por hora AM/PM de forma segura
-    cur.execute("""
-        SELECT *
-        FROM misas
-        ORDER BY 
-            fecha ASC,
-            CASE WHEN ampm='AM' THEN 0 ELSE 1 END,
-            CAST(substr(hora,1,2) AS INTEGER),
-            CAST(substr(hora,4,2) AS INTEGER)
-    """)
-    misas = cur.fetchall()
+    conn = get_db(); cur = conn.cursor()
 
     # Usuarios
     cur.execute("SELECT * FROM users ORDER BY username")
-    usuarios = cur.fetchall()
+    users = cur.fetchall()
+
+    # Misas
+    cur.execute("SELECT * FROM misas ORDER BY fecha, hora")
+    misas = cur.fetchall()
 
     # Categorías
     cur.execute("SELECT * FROM categorias ORDER BY nombre")
     categorias = cur.fetchall()
 
-    # Intenciones base
+    # Frases base
     cur.execute("SELECT * FROM intencion_base ORDER BY frase")
-    int_b = cur.fetchall()
+    frases = cur.fetchall()
+
+    # Configuración
+    cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
+    row = cur.fetchone()
+    texto_global = row["value"] if row else ""
+
+    cur.execute("SELECT value FROM settings WHERE key='last_deletion'")
+    row = cur.fetchone()
+    last_deletion = row["value"] if row else "Nunca"
 
     conn.close()
 
     return render_template(
         "admin/dashboard.html",
+        section=section,
+        users=users,
         misas=misas,
-        usuarios=usuarios,
         categorias=categorias,
-        int_b=int_b
+        frases=frases,
+        texto_global=texto_global,
+        last_deletion=last_deletion
     )
+
 
 # ============================================================
 #  CRUD USUARIOS
@@ -878,3 +880,4 @@ def debug_int_raw2():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
