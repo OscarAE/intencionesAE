@@ -332,7 +332,8 @@ def admin_create_misa():
     cur.execute("INSERT INTO misas(fecha,hora,ampm) VALUES (?,?,?)", (fecha, hora_24, ampm))
     conn.commit()
     conn.close()
-
+    
+    flash("Misa creada exitosamente")
     return redirect("/admin")
 
 
