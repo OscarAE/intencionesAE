@@ -151,7 +151,13 @@ def admin():
     users = cur.fetchall()
 
     # Misas
-    cur.execute("SELECT * FROM misas ORDER BY fecha, hora")
+    cur.execute("SELECT *
+        FROM misas
+        ORDER BY 
+            fecha ASC,
+            CASE ampm WHEN 'AM' THEN 0 ELSE 1 END,
+            CAST(substr(hora,1,2) AS INTEGER),
+            CAST(substr(hora,4,2) AS INTEGER)")
     misas = cur.fetchall()
 
     # Categorías
