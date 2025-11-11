@@ -823,8 +823,26 @@ def funcionario_print_day():
 
     y = h - 120
 
+    from datetime import datetime
+    import locale
+    
+    # configurar español
+    try:
+        locale.setlocale(locale.LC_TIME, "es_ES.utf8")
+    except:
+        try:
+            locale.setlocale(locale.LC_TIME, "es_CO.utf8")
+        except:
+            locale.setlocale(locale.LC_TIME, "")
+    
+    # convertir string YYYY-MM-DD a datetime
+    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
+    
+    # convertir a formato "MIÉRCOLES 11 DE OCTUBRE DE 2025"
+    fecha_formateada = fecha_dt.strftime("%A %d de %B de %Y").upper()
+    
     c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(w/2, y, f"INTENCIONES — {dia}")
+    c.drawCentredString(w/2, y, f"INTENCIONES — {fecha_formateada}")
     y -= 30
 
     # Texto global arriba
