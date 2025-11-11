@@ -216,7 +216,8 @@ def admin_create_user():
     except Exception as e:
         flash("Error: " + str(e))
     conn.close()
-
+    
+    flash("Usuario creado exitosamente")
     return redirect("/admin")
 
 @app.route("/admin/users/toggle/<int:user_id>")
@@ -371,6 +372,7 @@ def admin_create_categoria():
     conn.commit()
     conn.close()
 
+    flash("Categoria creada exitosamente")
     return redirect("/admin")
 
 @app.route("/admin/categorias/edit/<int:cat_id>", methods=["POST"])
@@ -417,6 +419,8 @@ def admin_create_int_base():
     cur.execute("INSERT INTO intencion_base(frase,active) VALUES (?,1)", (frase,))
     conn.commit()
     conn.close()
+
+    flash("Intencion creada exitosamente")
     return redirect("/admin")
 
 @app.route("/admin/intencion_base/delete/<int:id>")
@@ -432,6 +436,8 @@ def admin_delete_int_base(id):
         conn.commit()
 
     conn.close()
+
+    flash("Intencion eliminada creada exitosamente")
     return redirect("/admin")
 # ============================================================
 #  CONFIGURACIÓN Y AJUSTES (PDF, RANGOS, ETC)
