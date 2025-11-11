@@ -821,7 +821,7 @@ def funcionario_print_day():
     except:
         pass
 
-    y = h - 120
+    y = h - 125
 
     from datetime import datetime
     import locale
@@ -954,7 +954,16 @@ def funcionario_print_day():
 
     # Pie de página
     usuario = session["username"]
-    fecha_imp = datetime.now().strftime("%A %d de %B de %Y a las %I:%M %p").capitalize()
+    # Fecha actual en español para el pie de página
+    now = datetime.now()
+    
+    dia_imp = dias[now.strftime("%A")]
+    mes_imp = meses[now.strftime("%B")]
+    
+    # hora con formato 12H (AM/PM)
+    hora_imp = now.strftime("%I:%M %p").upper()
+    
+    fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
 
     c.setFont("Helvetica-Bold", 9)
     c.drawString(245, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
