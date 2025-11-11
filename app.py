@@ -777,34 +777,66 @@ def funcionario_export_csv():
 @app.route("/funcionario/print_day", methods=["POST"])
 @login_required()
 def funcionario_print_day():
+    from datetime import datetime
+    import locale
+
+    # idioma español para fecha
+    try:
+        locale.setlocale(locale.LC_TIME, "es_ES.utf8")
+    except:
+        try:
+            locale.setlocale(locale.LC_TIME, "es_CO.utf8")
+        except:
+            locale.setlocale(locale.LC_TIME, "")
+
     dia = request.form["dia"]
 
     conn = get_db(); cur = conn.cursor()
 
+    # ================================
+    # Texto global
+    # ================================
     cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
     row = cur.fetchone()
     global_text = row["value"] if row else ""
 
+    # ================================
+    # Misas del día
+    # ================================
     cur.execute("SELECT * FROM misas WHERE fecha=? ORDER BY hora", (dia,))
     misas = cur.fetchall()
 
+    # ================================
     # Preparar PDF
+    # ================================
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     w, h = letter
-    y = h - 40
 
+    # -------- Borde decorativo --------
+    try:
+        c.drawImage("static/borde.png", 0, 0, width=w, height=h)
+    except Exception as e:
+        print("NO SE PUDO CARGAR BORDE:", e)
+
+    # -------- Logo centrado --------
+    try:
+        logo_width = 120
+        logo_height = 120
+        c.drawImage("static/logo.png", (w-logo_width)/2, h-150, width=logo_width, height=logo_height)
+    except Exception as e:
+        print("NO SE PUDO CARGAR LOGO:", e)
+
+    y = h - 180
+
+    # -------- Título principal --------
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, y, f"INTENCIONES — {dia}")
+    c.drawCentredString(w/2, y, f"INTENCIONES — {dia}")
     y -= 30
 
-    if global_text:
-        c.setFont("Helvetica-Oblique", 10)
-        for line in global_text.splitlines():
-            c.drawString(50, y, line)
-            y -= 14
-        y -= 10
-
+    # ================================
+    # CONTENIDO (intenciones)
+    # ================================
     for misa in misas:
         c.setFont("Helvetica-Bold", 13)
         c.drawString(50, y, f"MISA {misa['hora']} {misa['ampm']}")
@@ -840,7 +872,7 @@ def funcionario_print_day():
             c.drawString(70, y, f"Intención: {it['base']}")
             y -= 14
 
-            # dividir texto largo
+            # dividir textos largos
             pet = it["peticiones"] or ""
             while len(pet) > 90:
                 c.drawString(70, y, "Peticiones: " + pet[:90])
@@ -849,7 +881,7 @@ def funcionario_print_day():
             c.drawString(70, y, "Peticiones: " + pet)
             y -= 16
 
-            # texto adicional categoría
+            # texto adicional de categoría
             if it["cat_text"]:
                 c.setFont("Helvetica-Oblique", 10)
                 for line in it["cat_text"].splitlines():
@@ -858,11 +890,36 @@ def funcionario_print_day():
                 c.setFont("Helvetica", 11)
                 y -= 10
 
-            if y < 100:
+            if y < 120:
                 c.showPage()
+                try:
+                    c.drawImage("static/borde.png", 0, 0, width=w, height=h)
+                except:
+                    pass
                 y = h - 40
 
         y -= 20
+
+    # ================================
+    # TEXTO GLOBAL AL FINAL
+    # ================================
+    if global_text:
+        c.setFont("Helvetica-Oblique", 11)
+        c.drawString(50, y, "TEXTO ADICIONAL:")
+        y -= 20
+
+        for line in global_text.splitlines():
+            c.drawString(50, y, line)
+            y -= 14
+
+    # ================================
+    # PIE DE PÁGINA
+    # ================================
+    usuario = session["username"]
+    fecha_imp = datetime.now().strftime("%A %d de %B de %Y a las %I:%M %p").capitalize()
+
+    c.setFont("Helvetica", 9)
+    c.drawString(40, 30, f"Impreso por: {usuario} — {fecha_imp}")
 
     c.save()
     buffer.seek(0)
@@ -873,6 +930,7 @@ def funcionario_print_day():
         as_attachment=True,
         download_name=f"intenciones_{dia}.pdf"
     )
+
 
 @app.route("/debug_int_raw2")
 def debug_int_raw2():
