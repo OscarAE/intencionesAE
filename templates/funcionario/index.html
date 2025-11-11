@@ -44,7 +44,7 @@
     </div>
     <div class="mb-2">
       <label>Peticiones (máx 250 caracteres)</label>
-      <textarea class="form-control" name="peticiones" maxlength="250" required></textarea>
+      <textarea class="form-control" name="peticiones" maxlength="250" oninput="soloMayusculasComasPuntos(this)" required></textarea>
     </div>
     <button class="btn btn-success">Guardar intención</button>
   </form>
