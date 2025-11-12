@@ -886,7 +886,7 @@ def funcionario_print_day():
     }
 
     # Datos de misas del día
-    cur.execute("SELECT * FROM misa WHERE dia = ? ORDER BY hora", (dia,))
+    cur.execute("SELECT * FROM misas WHERE dia = ? ORDER BY hora", (dia,))
     misas = cur.fetchall()
 
     buffer = io.BytesIO()
