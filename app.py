@@ -778,6 +778,14 @@ def funcionario_export_csv():
 @app.route("/funcionario/print_day", methods=["POST"])
 @login_required()
 def funcionario_print_day():
+    import locale
+    from datetime import datetime
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.units import inch
+
     dia = request.form["dia"]
 
     conn = get_db(); cur = conn.cursor()
@@ -791,73 +799,83 @@ def funcionario_print_day():
     cur.execute("SELECT * FROM misas WHERE fecha=? ORDER BY hora", (dia,))
     misas = cur.fetchall()
 
+    # ======== PDF ========
     buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
+    pdf = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        topMargin=130,
+        leftMargin=40,
+        rightMargin=40,
+        bottomMargin=60
+    )
+
     w, h = letter
 
-    # ======== FONDO ========
-    def dibujar_fondo(canvas_obj):
+    # ======= ESTILOS =======
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name="TituloMisa", fontSize=13, leading=14, spaceAfter=8, fontName="Helvetica-Bold"))
+    styles.add(ParagraphStyle(name="TituloCat", fontSize=11, leading=12, spaceAfter=6, fontName="Helvetica-Bold"))
+    styles.add(ParagraphStyle(name="Normal8", fontSize=8, leading=9))
+
+    story = []
+
+    # ======== TRADUCCIÓN FECHA ========
+    DIAS = {
+        "Monday":"LUNES","Tuesday":"MARTES","Wednesday":"MIÉRCOLES","Thursday":"JUEVES",
+        "Friday":"VIERNES","Saturday":"SÁBADO","Sunday":"DOMINGO"
+    }
+
+    MESES = {
+        "January":"ENERO","February":"FEBRERO","March":"MARZO","April":"ABRIL","May":"MAYO",
+        "June":"JUNIO","July":"JULIO","August":"AGOSTO","September":"SEPTIEMBRE",
+        "October":"OCTUBRE","November":"NOVIEMBRE","December":"DICIEMBRE"
+    }
+
+    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
+    fecha_formateada = f"""
+    {DIAS[fecha_dt.strftime('%A')]} {fecha_dt.day} DE {MESES[fecha_dt.strftime('%B')]} DE {fecha_dt.year}
+    """
+    fecha_formateada = fecha_formateada.strip()
+
+    # ======== FONDO (marca agua) ========
+    def fondo(canvas, doc):
         try:
-            canvas_obj.saveState()
-            canvas_obj.drawImage("static/borde.png", 0, 0, width=w, height=h, mask="auto")
-            canvas_obj.restoreState()
+            canvas.drawImage("static/borde.png", 0, 0, width=w, height=h, mask='auto')
         except:
             pass
 
-    dibujar_fondo(c)
+        # Logo superior centrado
+        try:
+            logo_width = 400
+            logo_height = 65
+            canvas.drawImage("static/titulo.png", (w-logo_width)/2, h-120,
+                             width=logo_width, height=logo_height)
+        except:
+            pass
 
-    # ======== LOGO ========
-    try:
-        logo_width = 400
-        logo_height = 65
-        c.drawImage("static/titulo.png", (w-logo_width)/2, h-120,
-                    width=logo_width, height=logo_height)
-    except:
-        pass
+        # Título centrado
+        canvas.setFont("Helvetica-Bold", 12)
+        canvas.drawCentredString(w/2, h-145, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
 
-    y = h - 130
-
-    # --- TRADUCCIÓN ---
-    dias = {
-        "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
-        "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO",
-        "Sunday": "DOMINGO"
-    }
-
-    meses = {
-        "January": "ENERO", "February": "FEBRERO", "March": "MARZO",
-        "April": "ABRIL", "May": "MAYO", "June": "JUNIO",
-        "July": "JULIO", "August": "AGOSTO", "September": "SEPTIEMBRE",
-        "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
-    }
-
-    from datetime import datetime
-    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
-    fecha_formateada = (
-        f"{dias[fecha_dt.strftime('%A')]} {fecha_dt.day} "
-        f"DE {meses[fecha_dt.strftime('%B')]} DE {fecha_dt.year}"
-    )
-
-    # ======== TÍTULO ========
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(w/2, y,
-        f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-    y -= 30
+        # Pie de página
+        usuario = session["username"]
+        now = datetime.now()
+        fecha_imp = f"{DIAS[now.strftime('%A')]} {now.day} DE {MESES[now.strftime('%B')]} DE {now.year} A LAS {now.strftime('%I:%M %p').upper()}"
+        canvas.setFont("Helvetica-Bold", 9)
+        canvas.drawCentredString(w/2, 40, f"IMPRESO POR: {usuario} — {fecha_imp}")
 
     # ======== TEXTO GLOBAL ========
     if global_text:
-        c.setFont("Helvetica-Oblique", 10)
-        for line in global_text.splitlines():
-            c.drawString(50, y, line)
-            y -= 14
-        y -= 10
+        story.append(Paragraph(global_text, styles["Normal8"]))
+        story.append(Spacer(1, 12))
 
-    # ======== CONTENIDO POR MISA ========
+    # ======== POR CADA MISA ========
     for misa in misas:
-        c.setFont("Helvetica-Bold", 13)
-        c.drawString(50, y, f"MISA {misa['hora']} {misa['ampm']}")
-        y -= 20
 
+        story.append(Paragraph(f"MISA {misa['hora']} {misa['ampm']}", styles["TituloMisa"]))
+
+        # Obtener intenciones
         cur.execute("""
             SELECT i.*, 
                    c.nombre AS cat_nombre,
@@ -874,93 +892,78 @@ def funcionario_print_day():
         items = cur.fetchall()
 
         if not items:
-            c.setFont("Helvetica", 11)
-            c.drawString(70, y, "No hay intenciones.")
-            y -= 25
+            story.append(Paragraph("No hay intenciones.", styles["Normal8"]))
+            story.append(Spacer(1, 10))
             continue
 
-        # ---- AGRUPAR POR CATEGORÍA ----
+        # Agrupar por categoría
         categorias = {}
         for it in items:
-            titulo_cat = it["cat_text"] or it["cat_nombre"] or "SIN CATEGORÍA"
+            titulo_cat = it["cat_text"] or it["cat_nombre"]
             categorias.setdefault(titulo_cat, []).append(it)
 
-        # ---- IMPRIMIR POR CATEGORÍA ----
+        # Por categoría
         for titulo_cat, lista in categorias.items():
 
-            # TÍTULO DE LA CATEGORÍA
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(50, y, titulo_cat.upper())
-            y -= 16
+            story.append(Paragraph(titulo_cat, styles["TituloCat"]))
 
-            # Cambiar a fuente pequeña
-            c.setFont("Helvetica", 8)
+            # Generar tabla en bloques de 4 columnas (2 intenciones por fila)
+            tabla_data = []
 
-            # Crear pares: (peticiones, ofrece)
-            pares = [
-                ((it["peticiones"] or "").strip(), (it["ofrece"] or "").strip())
-                for it in lista
-            ]
+            # FILA DE ENCABEZADOS
+            tabla_data.append(["PETICIONES", "OFRECE", "PETICIONES", "OFRECE"])
 
-            idx = 0
-            while idx < len(pares):
+            
+            fila = []
+            for it in lista:
+                pet = (it["peticiones"] or "").strip()
+                ofr = (it["ofrece"] or "").strip()
 
-                # Primera pareja
-                p1, o1 = pares[idx]
+                # Cada intención ocupa 2 columnas
+                fila.extend([pet, ofr])
 
-                # Segunda pareja si existe
-                if idx + 1 < len(pares):
-                    p2, o2 = pares[idx + 1]
-                else:
-                    p2, o2 = "", ""
+                # Cuando tengamos 2 intenciones → fila completa (4 columnas)
+                if len(fila) == 4:
+                    tabla_data.append(fila)
+                    fila = []
 
-                # Columnas:
-                # PETICIONES (col1)
-                c.drawString(60, y, p1[:40])
-                # OFRECE (col2)
-                c.drawString(200, y, o1[:25])
-                # PETICIONES (col3)
-                c.drawString(330, y, p2[:40])
-                # OFRECE (col4)
-                c.drawString(470, y, o2[:25])
+            # Si queda 1 intención sola → completar con celdas vacías
+            if fila:
+                while len(fila) < 4:
+                    fila.append("")
+                tabla_data.append(fila)
 
-                y -= 12
-                idx += 2
+            # Crear tabla
+            t = Table(
+                tabla_data,
+                colWidths=[120, 90, 120, 90]  # Ajuste profesional
+            )
 
-                # Saltos de página
-                if y < 80:
-                    c.showPage()
-                    dibujar_fondo(c)
-                    y = h - 60
+            t.setStyle(TableStyle([
+                ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('LEFTPADDING', (0,0), (-1,-1), 4),
+                ('RIGHTPADDING', (0,0), (-1,-1), 4),
+                ('FONTSIZE', (0,0), (-1,-1), 8),
+                ('RIGHTPADDING', (0,0), (-1,-1), 4),
+                ('FONTSIZE', (0,0), (-1,-1), 8),
+            ]))
 
-            y -= 10  # espacio entre categorías
+            story.append(t)
+            story.append(Spacer(1, 16))
 
-        y -= 10  # espacio entre misas
+        # Salto entre misas
+        story.append(PageBreak())
 
-    # ======== PIE DE PÁGINA ========
-    usuario = session["username"]
-    now = datetime.now()
+    pdf.build(story, onFirstPage=fondo, onLaterPages=fondo)
 
-    fecha_imp = (
-        f"{dias[now.strftime('%A')]} {now.day} DE "
-        f"{meses[now.strftime('%B')]} DE {now.year} "
-        f"A LAS {now.strftime('%I:%M %p').upper()}"
-    )
-
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(220, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
-
-    c.save()
     buffer.seek(0)
-
     return send_file(
         buffer,
         mimetype="application/pdf",
         as_attachment=True,
         download_name=f"intenciones_{dia}.pdf"
     )
-
-
 
 @app.route("/debug_int_raw2")
 def debug_int_raw2():
