@@ -966,27 +966,26 @@ def funcionario_print_day():
                 dibujar_fondo(c)
                 y = h - 40
 
-    # ======== TEXTO GLOBAL ABAJO (antes del pie de página) ========
-    # ======== TEXTO GLOBAL ABAJO (centrado, truncado, sin respetar saltos manuales) ========
+    # ======== TEXTO GLOBAL ABAJO (centrado, márgenes 3 cm, orden natural) ========
     if global_text:
         from reportlab.lib.units import cm
         from textwrap import wrap
     
         # Altura base: 2 cm encima del pie
         y_text = 2 * cm + 20
-        text_width = w - 4 * cm  # deja 2 cm libres a cada lado
+        text_width = w - 6 * cm  # deja 3 cm libres a cada lado
     
         # Unir todas las líneas en un solo párrafo
         full_text = " ".join(global_text.splitlines()).strip()
     
-        # Dividir el texto según el ancho disponible
-        wrapped_lines = wrap(full_text, width=95)  # ajusta 95 si el texto es muy largo o corto
+        # Dividir texto según ancho disponible (ajusta el número si el texto se corta raro)
+        wrapped_lines = wrap(full_text, width=80)
     
         c.setFont("Helvetica-Bold", 9)
     
         for line in wrapped_lines:
             c.drawCentredString(w / 2, y_text, line)
-            y_text += 12  # sube un poco por cada línea
+            y_text += 12  # ahora sube hacia arriba en orden natural
     
     # ======== PIE DE PÁGINA ========
     usuario = session["username"]
@@ -997,7 +996,7 @@ def funcionario_print_day():
     fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
 
     c.setFont("Helvetica-Bold", 9)
-    c.drawString(220, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
+    c.drawString(210, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
 
     c.save()
     buffer.seek(0)
