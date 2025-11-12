@@ -954,7 +954,7 @@ def funcionario_print_day():
                 dibujar_fondo(c)
                 y = h - 40
 
-    # ======== TEXTO GLOBAL ABAJO (antes del pie de página) ========
+    # Texto global al final (centrado y justo encima del pie de página)
     if global_text:
     c.setFont("Helvetica-Oblique", 9)
     line_height = 12
