@@ -795,11 +795,15 @@ def funcionario_print_day():
     from reportlab.platypus import Table, TableStyle, Paragraph
     from reportlab.lib.styles import ParagraphStyle
     from datetime import datetime
+    from textwrap import wrap
+    from reportlab.lib.units import cm
+    from reportlab.pdfgen import canvas
     import locale, io
 
     dia = request.form["dia"]
-
-    conn = get_db(); cur = conn.cursor()
+    
+    conn = get_db()
+    cur = conn.cursor()
 
     # Texto global (lo guardamos para ponerlo al final)
     cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
@@ -869,25 +873,7 @@ def funcionario_print_day():
     c.drawCentredString(w / 2, y, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
     y -= 30
 
-# ======== CONTENIDO DE LAS MISAS ========
-@app.route("/funcionario/print_day", methods=["POST"])
-@login_required()
-def funcionario_print_day():
-    from reportlab.lib.pagesizes import letter
-    from reportlab.lib import colors
-    from reportlab.platypus import Table, TableStyle, Paragraph
-    from reportlab.lib.styles import ParagraphStyle
-    from datetime import datetime
-    from textwrap import wrap
-    from reportlab.lib.units import cm
-    from reportlab.pdfgen import canvas
-    import io
-
-    dia = request.form["dia"]
-
-    conn = get_db()
-    cur = conn.cursor()
-
+    # ======== CONTENIDO DE LAS MISAS ========
     # Traductores de día y mes
     dias = {
         "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
