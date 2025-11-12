@@ -957,11 +957,14 @@ def funcionario_print_day():
     # ======== TEXTO GLOBAL ABAJO (antes del pie de página) ========
     if global_text:
     c.setFont("Helvetica-Oblique", 9)
-    y_footer = 90  # altura base del pie de página
-    y_global = y_footer + (len(global_text.splitlines()) * 12) + 10
-    for line in reversed(global_text.splitlines()):
-        c.drawString(50, y_global, line)
-        y_global -= 12
+    line_height = 12
+    y_footer = 90  # base del pie
+    total_height = len(global_text.splitlines()) * line_height
+    y_start = y_footer + total_height + 10  # 10px encima del pie
+
+    for line in global_text.splitlines():
+        c.drawCentredString(w / 2, y_start, line)
+        y_start -= line_height
 
     # ======== PIE DE PÁGINA ========
     usuario = session["username"]
