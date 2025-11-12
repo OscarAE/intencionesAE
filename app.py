@@ -233,7 +233,7 @@ def admin_toggle_user(user_id):
     row = cur.fetchone()
 
     if not row:
-        flash("Usuario no encontrado.")
+        flash("❌ Usuario no encontrado.")
         conn.close()
         return redirect("/admin")
 
@@ -326,7 +326,7 @@ def admin_create_misa():
         dt = datetime.strptime(h, "%H:%M")
         hora_24 = dt.strftime("%H:%M")
     except:
-        flash("Formato de hora inválido. Use 4 números (ej: 0700).")
+        flash("❌ Formato de hora inválido. Use 4 números (ej: 0700).")
         return redirect("/admin")
 
     conn = get_db()
@@ -364,17 +364,20 @@ def admin_create_categoria():
     nombre = request.form["nombre"]
     descripcion = request.form.get("descripcion", "")
     texto_adicional = request.form.get("texto_adicional", "")
+    orden = request.form.get("orden", 0)  # 🆕 Campo nuevo
 
-    conn = get_db(); cur = conn.cursor()
+    conn = get_db()
+    cur = conn.cursor()
     cur.execute(
-        "INSERT INTO categorias(nombre,descripcion,texto_adicional,active) VALUES (?,?,?,1)",
-        (nombre, descripcion, texto_adicional)
+        "INSERT INTO categorias(nombre, descripcion, texto_adicional, orden, active) VALUES (?,?,?,?,1)",
+        (nombre, descripcion, texto_adicional, orden)
     )
     conn.commit()
     conn.close()
 
-    flash("✅ Categoria creada exitosamente.")
+    flash("✅ Categoría creada exitosamente.")
     return redirect("/admin")
+
 
 @app.route("/admin/categorias/edit/<int:cat_id>", methods=["POST"])
 @login_required(role="admin")
@@ -382,20 +385,26 @@ def admin_edit_categoria(cat_id):
     nombre = request.form["nombre"]
     descripcion = request.form.get("descripcion", "")
     texto_adicional = request.form.get("texto_adicional", "")
+    orden = request.form.get("orden", 0)  # 🆕 Campo nuevo
 
-    conn = get_db(); cur = conn.cursor()
+    conn = get_db()
+    cur = conn.cursor()
     cur.execute(
-        "UPDATE categorias SET nombre=?, descripcion=?, texto_adicional=? WHERE id=?",
-        (nombre, descripcion, texto_adicional, cat_id)
+        "UPDATE categorias SET nombre=?, descripcion=?, texto_adicional=?, orden=? WHERE id=?",
+        (nombre, descripcion, texto_adicional, orden, cat_id)
     )
     conn.commit()
     conn.close()
+
+    flash("✅ Categoría actualizada correctamente.")
     return redirect("/admin")
+
 
 @app.route("/admin/categorias/delete/<int:cat_id>")
 @login_required(role="admin")
 def admin_delete_categoria(cat_id):
-    conn = get_db(); cur = conn.cursor()
+    conn = get_db()
+    cur = conn.cursor()
 
     cur.execute("SELECT COUNT(*) as c FROM intenciones WHERE categoria_id=?", (cat_id,))
     if cur.fetchone()["c"] > 0:
@@ -405,6 +414,7 @@ def admin_delete_categoria(cat_id):
         conn.commit()
 
     conn.close()
+    flash("🗑️ Categoría eliminada correctamente.")
     return redirect("/admin")
 
 # ============================================================
@@ -668,7 +678,7 @@ def funcionario_registrar():
     conn.commit()
     conn.close()
 
-    flash("Intención registrada exitosamente")
+    flash("✅ Intención registrada exitosamente.")
     return redirect("/funcionario")
 
 # ============================================================
@@ -700,7 +710,7 @@ def funcionario_editar(int_id):
     if request.method == "POST":
         # no permitir editar después de la misa
         if datetime.now() > misa_dt:
-            flash("La misa ya pasó, no se puede editar")
+            flash("❌ La misa ya pasó, no se puede editar.")
             conn.close()
             return redirect("/funcionario")
 
@@ -719,7 +729,7 @@ def funcionario_editar(int_id):
 
         conn.commit()
         conn.close()
-        flash("Cambios guardados")
+        flash("✅ Cambios guardados.")
         return redirect("/funcionario")
 
     # cargar combos
