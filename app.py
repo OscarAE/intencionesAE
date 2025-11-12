@@ -968,21 +968,21 @@ def funcionario_print_day():
 
     # ======== TEXTO GLOBAL ABAJO (antes del pie de página) ========
     if global_text:
-    from reportlab.lib.units import cm
-
-    # Altura base: 1 cm por encima del pie
-    y_base = 2 * cm  # 1 cm arriba del borde + margen de seguridad
-    text_width = w - 2 * cm  # margen lateral de 1 cm a cada lado
-
-    c.setFont("Helvetica-Bold", 9)
-
-    # Dividir en líneas que quepan en el ancho disponible
-    from textwrap import wrap
-    for line in global_text.splitlines():
-        wrapped_lines = wrap(line, width=100)  # puedes ajustar el ancho de texto si lo ves muy corto o largo
-        for subline in wrapped_lines:
-            c.drawCentredString(w / 2, y_base, subline)
-            y_base += 12  # subir hacia arriba línea por línea
+        from reportlab.lib.units import cm
+    
+        # Altura base: 1 cm por encima del pie
+        y_base = 2 * cm  # 1 cm arriba del borde + margen de seguridad
+        text_width = w - 2 * cm  # margen lateral de 1 cm a cada lado
+    
+        c.setFont("Helvetica-Bold", 9)
+    
+        # Dividir en líneas que quepan en el ancho disponible
+        from textwrap import wrap
+        for line in global_text.splitlines():
+            wrapped_lines = wrap(line, width=100)  # puedes ajustar el ancho de texto si lo ves muy corto o largo
+            for subline in wrapped_lines:
+                c.drawCentredString(w / 2, y_base, subline)
+                y_base += 12  # subir hacia arriba línea por línea
 
 
     # ======== PIE DE PÁGINA ========
