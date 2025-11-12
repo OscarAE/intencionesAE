@@ -897,6 +897,10 @@ def funcionario_print_day():
         """, (misa["id"],))
         items = cur.fetchall()
 
+        print(f"🟢 MISA {misa['id']} → {len(items)} intenciones encontradas")
+        for it in items:
+            print(f"   - {it['cat']} | {it['peticiones']}")
+
         if not items:
             c.setFont("Helvetica", 10)
             c.drawString(70, y, "No hay intenciones registradas.")
