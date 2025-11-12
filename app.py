@@ -966,26 +966,29 @@ def funcionario_print_day():
                 dibujar_fondo(c)
                 y = h - 40
 
-    # ======== TEXTO GLOBAL ABAJO (centrado, márgenes 3 cm, orden natural) ========
+    # ======== TEXTO GLOBAL ABAJO (centrado, márgenes 2.5 cm, lectura normal) ========
     if global_text:
         from reportlab.lib.units import cm
         from textwrap import wrap
     
-        # Altura base: 2 cm encima del pie
-        y_text = 2 * cm + 20
-        text_width = w - 6 * cm  # deja 3 cm libres a cada lado
+        # Posición inicial: 2 cm por encima del pie de página
+        y_text_start = 2 * cm + 20
+        # Márgenes laterales de 2.5 cm a cada lado
+        text_width = w - (5 * cm)
     
-        # Unir todas las líneas en un solo párrafo
+        # Unir líneas del texto global en un solo párrafo
         full_text = " ".join(global_text.splitlines()).strip()
     
-        # Dividir texto según ancho disponible (ajusta el número si el texto se corta raro)
-        wrapped_lines = wrap(full_text, width=80)
+        # Ajustar texto según ancho disponible (valor estimado para ancho de página carta)
+        wrapped_lines = wrap(full_text, width=85)
     
         c.setFont("Helvetica-Bold", 9)
     
-        for line in wrapped_lines:
-            c.drawCentredString(w / 2, y_text, line)
-            y_text += 12  # ahora sube hacia arriba en orden natural
+        # Dibujar las líneas en orden natural (de arriba hacia abajo)
+        for i, line in enumerate(wrapped_lines):
+            # Y crece hacia arriba, por eso restamos el desplazamiento vertical
+            y_line = y_text_start + (len(wrapped_lines) - i - 1) * 12
+            c.drawCentredString(w / 2, y_line, line)
     
     # ======== PIE DE PÁGINA ========
     usuario = session["username"]
