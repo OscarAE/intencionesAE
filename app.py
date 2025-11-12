@@ -940,13 +940,17 @@ def funcionario_print_day():
             )
 
             t.setStyle(TableStyle([
-                ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-                ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                ('LEFTPADDING', (0,0), (-1,-1), 4),
-                ('RIGHTPADDING', (0,0), (-1,-1), 4),
-                ('FONTSIZE', (0,0), (-1,-1), 8),
-                ('RIGHTPADDING', (0,0), (-1,-1), 4),
-                ('FONTSIZE', (0,0), (-1,-1), 8),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),  # fondo encabezado
+            ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),   # fuente encabezado
+            ('FONTSIZE', (0,0), (-1,0), 9),                  # tamaño encabezado
+            ('ALIGN', (0,0), (-1,0), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 4),
+            ('RIGHTPADDING', (0,0), (-1,-1), 4),
+            ('FONTSIZE', (1,1), (-1,-1), 8),                 # tamaño contenido
+            ('FONTNAME', (1,1), (-1,-1), 'Helvetica'),       # fuente contenido
             ]))
 
             story.append(t)
