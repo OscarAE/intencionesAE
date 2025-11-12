@@ -974,7 +974,7 @@ def funcionario_print_day():
             y = h - 100
         c.setFont("Helvetica-Oblique", 9)
         line_height = 12
-        y_footer = 90  # base del pie de página
+        y_footer = 70  # base del pie de página
         total_height = len(global_text.splitlines()) * line_height
         y_start = y_footer + total_height + 10  # 10px arriba del pie
 
