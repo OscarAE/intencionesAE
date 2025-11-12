@@ -120,7 +120,7 @@ def login():
             session["username"]=user["username"]
             session["role"]=user["role"]
             return redirect("/")
-        flash("Usuario o contraseña incorrectos")
+        flash("❌ Usuario o contraseña incorrectos.")
 
     return render_template("login.html")
 
@@ -218,7 +218,7 @@ def admin_create_user():
         flash("Error: " + str(e))
     conn.close()
     
-    flash("Usuario creado exitosamente")
+    flash("✅ Usuario creado exitosamente.")
     return redirect("/admin")
 
 @app.route("/admin/users/toggle/<int:user_id>")
@@ -242,7 +242,7 @@ def admin_toggle_user(user_id):
 
     # impedir que un admin se desactive a sí mismo
     if session["user_id"] == user_id:
-        flash("No puede inactivarse a usted mismo.")
+        flash("❌ No puede inactivarse a usted mismo.")
         conn.close()
         return redirect("/admin")
 
@@ -254,7 +254,7 @@ def admin_toggle_user(user_id):
 
         # si solo hay 1 admin activo, no se puede inactivar
         if count_admins <= 1 and active == 1:
-            flash("No se puede inactivar este administrador. Debe haber al menos un administrador activo.")
+            flash("❌ No se puede inactivar este administrador. Debe haber al menos un administrador activo.")
             conn.close()
             return redirect("/admin")
 
@@ -264,7 +264,7 @@ def admin_toggle_user(user_id):
     conn.commit()
     conn.close()
 
-    flash("Estado actualizado.")
+    flash("✅ Estado actualizado.")
     return redirect("/admin")
 
 
@@ -274,7 +274,7 @@ def admin_delete_user(user_id):
 
     # impedir que se elimine a sí mismo
     if session["user_id"] == user_id:
-        flash("No puede eliminarse a usted mismo.")
+        flash("❌ No puede eliminarse a usted mismo.")
         return redirect("/admin")
 
     conn = get_db()
@@ -285,13 +285,13 @@ def admin_delete_user(user_id):
     row = cur.fetchone()
 
     if not row:
-        flash("Usuario no encontrado.")
+        flash("❌ Usuario no encontrado.")
         conn.close()
         return redirect("/admin")
 
     # impedir eliminar administradores
     if row["role"] == "admin":
-        flash("No es posible eliminar administradores. Solo se puede activar/inactivar.")
+        flash("❌ No es posible eliminar administradores. Solo se puede activar/inactivar.")
         conn.close()
         return redirect("/admin")
 
@@ -300,7 +300,7 @@ def admin_delete_user(user_id):
     conn.commit()
     conn.close()
 
-    flash("Usuario eliminado correctamente.")
+    flash("✅ Usuario eliminado correctamente.")
     return redirect("/admin")
 
 
@@ -335,7 +335,7 @@ def admin_create_misa():
     conn.commit()
     conn.close()
     
-    flash("Misa creada exitosamente")
+    flash("✅ Misa creada exitosamente.")
     return redirect("/admin")
 
 
@@ -346,7 +346,7 @@ def admin_delete_misa(misa_id):
 
     cur.execute("SELECT COUNT(*) as c FROM intenciones WHERE misa_id=?", (misa_id,))
     if cur.fetchone()["c"] > 0:
-        flash("No se puede eliminar: hay intenciones asociadas.")
+        flash("❌ No se puede eliminar: hay intenciones asociadas.")
     else:
         cur.execute("DELETE FROM misas WHERE id=?", (misa_id,))
         conn.commit()
@@ -373,7 +373,7 @@ def admin_create_categoria():
     conn.commit()
     conn.close()
 
-    flash("Categoria creada exitosamente")
+    flash("✅ Categoria creada exitosamente.")
     return redirect("/admin")
 
 @app.route("/admin/categorias/edit/<int:cat_id>", methods=["POST"])
@@ -399,7 +399,7 @@ def admin_delete_categoria(cat_id):
 
     cur.execute("SELECT COUNT(*) as c FROM intenciones WHERE categoria_id=?", (cat_id,))
     if cur.fetchone()["c"] > 0:
-        flash("No se puede eliminar: categoría en uso.")
+        flash("❌ No se puede eliminar: categoría en uso.")
     else:
         cur.execute("DELETE FROM categorias WHERE id=?", (cat_id,))
         conn.commit()
@@ -443,14 +443,14 @@ def admin_delete_int_base(id):
 
     cur.execute("SELECT COUNT(*) as c FROM intenciones WHERE intencion_base_id=?", (id,))
     if cur.fetchone()["c"] > 0:
-        flash("No se puede eliminar: frase en uso.")
+        flash("❌ No se puede eliminar: frase en uso.")
     else:
         cur.execute("DELETE FROM intencion_base WHERE id=?", (id,))
         conn.commit()
 
     conn.close()
 
-    flash("Intencion eliminada creada exitosamente")
+    flash("✅ Intencion eliminada creada exitosamente.")
     return redirect("/admin")
 # ============================================================
 #  CONFIGURACIÓN Y AJUSTES (PDF, RANGOS, ETC)
@@ -967,24 +967,27 @@ def funcionario_print_day():
                 y = h - 40
 
     # ======== TEXTO GLOBAL ABAJO (antes del pie de página) ========
+    # ======== TEXTO GLOBAL ABAJO (centrado, truncado, sin respetar saltos manuales) ========
     if global_text:
         from reportlab.lib.units import cm
+        from textwrap import wrap
     
-        # Altura base: 1 cm por encima del pie
-        y_base = 2 * cm  # 1 cm arriba del borde + margen de seguridad
-        text_width = w - 2 * cm  # margen lateral de 1 cm a cada lado
+        # Altura base: 2 cm encima del pie
+        y_text = 2 * cm + 20
+        text_width = w - 4 * cm  # deja 2 cm libres a cada lado
+    
+        # Unir todas las líneas en un solo párrafo
+        full_text = " ".join(global_text.splitlines()).strip()
+    
+        # Dividir el texto según el ancho disponible
+        wrapped_lines = wrap(full_text, width=95)  # ajusta 95 si el texto es muy largo o corto
     
         c.setFont("Helvetica-Bold", 9)
     
-        # Dividir en líneas que quepan en el ancho disponible
-        from textwrap import wrap
-        for line in global_text.splitlines():
-            wrapped_lines = wrap(line, width=100)  # puedes ajustar el ancho de texto si lo ves muy corto o largo
-            for subline in wrapped_lines:
-                c.drawCentredString(w / 2, y_base, subline)
-                y_base += 12  # subir hacia arriba línea por línea
-
-
+        for line in wrapped_lines:
+            c.drawCentredString(w / 2, y_text, line)
+            y_text += 12  # sube un poco por cada línea
+    
     # ======== PIE DE PÁGINA ========
     usuario = session["username"]
     now = datetime.now()
