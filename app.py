@@ -906,12 +906,17 @@ def funcionario_print_day():
         cell_style = ParagraphStyle(name="CellStyle", fontName="Helvetica", fontSize=8, leading=10, spaceAfter=2)
         header_style = ParagraphStyle(name="HeaderStyle", fontName="Helvetica-Bold", fontSize=9, alignment=1, leading=11)
 
-        categorias = {}
+        # Agrupar categorías respetando el orden definido en la BD
+        categorias = []
         for it in items:
             cat = it["cat_text"] or it["cat"] or "SIN CATEGORÍA"
-            categorias.setdefault(cat, []).append(it)
-
-        for cat_nombre, cat_items in categorias.items():
+            if not categorias or categorias[-1][0] != cat:
+                categorias.append((cat, [it]))
+            else:
+                categorias[-1][1].append(it)
+        
+        # Ahora sí iteramos las categorías en el mismo orden SQL
+        for cat_nombre, cat_items in categorias:
             c.setFont("Helvetica-Bold", 10)
             c.drawString(50, y, cat_nombre.upper())
             y -= 15
