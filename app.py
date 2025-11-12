@@ -901,11 +901,19 @@ def funcionario_print_day():
             c.drawString(50, y, cat_nombre.upper())
             y -= 15
 
+            header_style = ParagraphStyle(
+            name="HeaderStyle",
+            fontName="Helvetica-Bold",
+            fontSize=9,
+            alignment=1,  # 0=izq, 1=centro, 2=der
+            leading=11,
+            )
+            
             data = [[
-                Paragraph("<b>PETICIONES</b>", cell_style),
-                Paragraph("<b>OFRECE</b>", cell_style),
-                Paragraph("<b>PETICIONES</b>", cell_style),
-                Paragraph("<b>OFRECE</b>", cell_style)
+                Paragraph("PETICIONES", header_style),
+                Paragraph("OFRECE", header_style),
+                Paragraph("PETICIONES", header_style),
+                Paragraph("OFRECE", header_style)
             ]]
 
             fila = []
