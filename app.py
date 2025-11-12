@@ -789,7 +789,7 @@ def funcionario_print_day():
 
     conn = get_db(); cur = conn.cursor()
 
-    # Texto global
+    # Texto global (lo guardamos para ponerlo al final)
     cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
     row = cur.fetchone()
     global_text = row["value"] if row else ""
@@ -856,14 +856,6 @@ def funcionario_print_day():
     c.setFont("Helvetica-Bold", 11)
     c.drawCentredString(w / 2, y, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
     y -= 30
-
-    # ======== TEXTO GLOBAL (si existe) ========
-    if global_text:
-        c.setFont("Helvetica-Oblique", 9)
-        for line in global_text.splitlines():
-            c.drawString(50, y, line)
-            y -= 12
-        y -= 10
 
     # ======== CONTENIDO DE LAS MISAS ========
     for misa in misas:
@@ -937,7 +929,8 @@ def funcionario_print_day():
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, 0), 9),
-                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),     # <-- títulos centrados
+                ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),    # <-- títulos centrados verticalmente
                 ('VALIGN', (0, 1), (-1, -1), 'TOP'),
                 ('LEFTPADDING', (0, 0), (-1, -1), 4),
                 ('RIGHTPADDING', (0, 0), (-1, -1), 4),
@@ -952,6 +945,18 @@ def funcionario_print_day():
                 c.showPage()
                 dibujar_fondo(c)
                 y = h - 40
+
+    # ======== TEXTO GLOBAL ABAJO (antes del pie de página) ========
+    if global_text:
+        if y < 100:
+            c.showPage()
+            dibujar_fondo(c)
+            y = h - 100
+        c.setFont("Helvetica-Oblique", 9)
+        for line in global_text.splitlines():
+            c.drawCentredString(w / 2, y, line)
+            y -= 12
+        y -= 10
 
     # ======== PIE DE PÁGINA ========
     usuario = session["username"]
