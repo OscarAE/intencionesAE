@@ -795,98 +795,56 @@ def funcionario_print_day():
     c = canvas.Canvas(buffer, pagesize=letter)
     w, h = letter
 
-    # ======== FONDO / MARCA DE AGUA ========
-    def dibujar_fondo(canvas):
+    # ======== FONDO ========
+    def dibujar_fondo(canvas_obj):
         try:
-            canvas.saveState()
-            canvas.drawImage(
-                "static/borde.png",
-                0, 0,
-                width=w,
-                height=h,
-                mask="auto"
-            )
-            canvas.restoreState()
-        except Exception as e:
-            print("Error cargando fondo:", e)
+            canvas_obj.saveState()
+            canvas_obj.drawImage("static/borde.png", 0, 0, width=w, height=h, mask="auto")
+            canvas_obj.restoreState()
+        except:
+            pass
 
     dibujar_fondo(c)
 
-    y = h - 40
-
-    # Logo centrado
+    # ======== LOGO ========
     try:
         logo_width = 400
         logo_height = 65
-        c.drawImage("static/titulo.png", (w-logo_width)/2, h-120, width=logo_width, height=logo_height)
+        c.drawImage("static/titulo.png", (w-logo_width)/2, h-120,
+                    width=logo_width, height=logo_height)
     except:
         pass
 
     y = h - 130
 
-    from datetime import datetime
-    import locale
-    
-    # configurar español
-    try:
-        locale.setlocale(locale.LC_TIME, "es_ES.utf8")
-    except:
-        try:
-            locale.setlocale(locale.LC_TIME, "es_CO.utf8")
-        except:
-            locale.setlocale(locale.LC_TIME, "")
-    
-    # convertir string YYYY-MM-DD a datetime
-    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
-    
-    # convertir a formato "MIÉRCOLES 11 DE OCTUBRE DE 2025"
-    fecha_formateada = fecha_dt.strftime("%A %d de %B de %Y").upper()
-
-    # --- TRADUCCIÓN MANUAL DÍAS Y MESES ---
+    # --- TRADUCCIÓN ---
     dias = {
-        "Monday": "LUNES",
-        "Tuesday": "MARTES",
-        "Wednesday": "MIÉRCOLES",
-        "Thursday": "JUEVES",
-        "Friday": "VIERNES",
-        "Saturday": "SÁBADO",
+        "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
+        "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO",
         "Sunday": "DOMINGO"
     }
-    
-    meses = {
-        "January": "ENERO",
-        "February": "FEBRERO",
-        "March": "MARZO",
-        "April": "ABRIL",
-        "May": "MAYO",
-        "June": "JUNIO",
-        "July": "JULIO",
-        "August": "AGOSTO",
-        "September": "SEPTIEMBRE",
-        "October": "OCTUBRE",
-        "November": "NOVIEMBRE",
-        "December": "DICIEMBRE"
-    }
-    
-    # convertir el string 2025-10-11 a datetime
-    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
-    
-    # obtener valores en inglés
-    dia_ing = fecha_dt.strftime("%A")
-    mes_ing = fecha_dt.strftime("%B")
-    
-    # traducirlos usando los diccionarios
-    dia_esp = dias[dia_ing]
-    mes_esp = meses[mes_ing]
-    
-    # construir la fecha final
-    fecha_formateada = f"{dia_esp} {fecha_dt.day} DE {mes_esp} DE {fecha_dt.year}"
 
+    meses = {
+        "January": "ENERO", "February": "FEBRERO", "March": "MARZO",
+        "April": "ABRIL", "May": "MAYO", "June": "JUNIO",
+        "July": "JULIO", "August": "AGOSTO", "September": "SEPTIEMBRE",
+        "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
+    }
+
+    from datetime import datetime
+    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
+    fecha_formateada = (
+        f"{dias[fecha_dt.strftime('%A')]} {fecha_dt.day} "
+        f"DE {meses[fecha_dt.strftime('%B')]} DE {fecha_dt.year}"
+    )
+
+    # ======== TÍTULO ========
     c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(w/2, y, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+    c.drawCentredString(w/2, y,
+        f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
     y -= 30
 
-    # Texto global arriba
+    # ======== TEXTO GLOBAL ========
     if global_text:
         c.setFont("Helvetica-Oblique", 10)
         for line in global_text.splitlines():
@@ -894,14 +852,17 @@ def funcionario_print_day():
             y -= 14
         y -= 10
 
-    # Contenido
+    # ======== CONTENIDO POR MISA ========
     for misa in misas:
         c.setFont("Helvetica-Bold", 13)
         c.drawString(50, y, f"MISA {misa['hora']} {misa['ampm']}")
         y -= 20
 
         cur.execute("""
-            SELECT i.*, c.nombre AS cat, c.texto_adicional AS cat_text,
+            SELECT i.*, 
+                   c.nombre AS cat_nombre,
+                   c.texto_adicional AS cat_text,
+                   c.orden AS cat_orden,
                    b.frase AS base
             FROM intenciones i
             LEFT JOIN categorias c ON c.id=i.categoria_id
@@ -918,56 +879,76 @@ def funcionario_print_day():
             y -= 25
             continue
 
+        # ---- AGRUPAR POR CATEGORÍA ----
+        categorias = {}
         for it in items:
+            titulo_cat = it["cat_text"] or it["cat_nombre"] or "SIN CATEGORÍA"
+            categorias.setdefault(titulo_cat, []).append(it)
+
+        # ---- IMPRIMIR POR CATEGORÍA ----
+        for titulo_cat, lista in categorias.items():
+
+            # TÍTULO DE LA CATEGORÍA
             c.setFont("Helvetica-Bold", 11)
-            c.drawString(60, y, f"[{it['cat']}]")
-            y -= 15
-
-            c.setFont("Helvetica", 11)
-            c.drawString(70, y, f"Ofrece: {it['ofrece']}")
-            y -= 14
-
-            c.drawString(70, y, f"Intención: {it['base']}")
-            y -= 14
-
-            pet = it["peticiones"] or ""
-            while len(pet) > 90:
-                c.drawString(70, y, "Peticiones: " + pet[:90])
-                y -= 12
-                pet = pet[90:]
-            c.drawString(70, y, "Peticiones: " + pet)
+            c.drawString(50, y, titulo_cat.upper())
             y -= 16
 
-            if it["cat_text"]:
-                c.setFont("Helvetica-Oblique", 10)
-                for line in it["cat_text"].splitlines():
-                    c.drawString(70, y, line)
-                    y -= 12
-                c.setFont("Helvetica", 11)
-                y -= 10
+            # Cambiar a fuente pequeña
+            c.setFont("Helvetica", 8)
 
-            if y < 120:
-                c.showPage()
-                dibujar_fondo(c)
-                y = h - 40
+            # Crear pares: (peticiones, ofrece)
+            pares = [
+                ((it["peticiones"] or "").strip(), (it["ofrece"] or "").strip())
+                for it in lista
+            ]
 
-        y -= 20
+            idx = 0
+            while idx < len(pares):
 
-    # Pie de página
+                # Primera pareja
+                p1, o1 = pares[idx]
+
+                # Segunda pareja si existe
+                if idx + 1 < len(pares):
+                    p2, o2 = pares[idx + 1]
+                else:
+                    p2, o2 = "", ""
+
+                # Columnas:
+                # PETICIONES (col1)
+                c.drawString(60, y, p1[:40])
+                # OFRECE (col2)
+                c.drawString(200, y, o1[:25])
+                # PETICIONES (col3)
+                c.drawString(330, y, p2[:40])
+                # OFRECE (col4)
+                c.drawString(470, y, o2[:25])
+
+                y -= 12
+                idx += 2
+
+                # Saltos de página
+                if y < 80:
+                    c.showPage()
+                    dibujar_fondo(c)
+                    y = h - 60
+
+            y -= 10  # espacio entre categorías
+
+        y -= 10  # espacio entre misas
+
+    # ======== PIE DE PÁGINA ========
     usuario = session["username"]
-    # Fecha actual en español para el pie de página
     now = datetime.now()
-    
-    dia_imp = dias[now.strftime("%A")]
-    mes_imp = meses[now.strftime("%B")]
-    
-    # hora con formato 12H (AM/PM)
-    hora_imp = now.strftime("%I:%M %p").upper()
-    
-    fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
+
+    fecha_imp = (
+        f"{dias[now.strftime('%A')]} {now.day} DE "
+        f"{meses[now.strftime('%B')]} DE {now.year} "
+        f"A LAS {now.strftime('%I:%M %p').upper()}"
+    )
 
     c.setFont("Helvetica-Bold", 9)
-    c.drawString(210, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
+    c.drawString(220, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
 
     c.save()
     buffer.seek(0)
@@ -978,6 +959,7 @@ def funcionario_print_day():
         as_attachment=True,
         download_name=f"intenciones_{dia}.pdf"
     )
+
 
 
 @app.route("/debug_int_raw2")
