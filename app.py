@@ -949,7 +949,7 @@ def funcionario_print_day():
             t.drawOn(c, 50, y - h_table)
             y -= h_table + 20
 
-                        if y < 120:
+            if y < 120:
                 c.showPage()
                 dibujar_fondo(c)
                 y = h - 40
