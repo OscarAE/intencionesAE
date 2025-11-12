@@ -245,13 +245,18 @@
 <h3>Categorías</h3>
 <table class="table table-striped">
     <tr>
-        <th>Nombre</th><th>Descripción</th><th>Texto adicional</th><th>Acciones</th>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Texto adicional</th>
+        <th>Orden</th>
+        <th>Acciones</th>
     </tr>
     {% for c in categorias %}
     <tr>
         <td>{{ c.nombre }}</td>
         <td>{{ c.descripcion }}</td>
         <td>{{ c.texto_adicional }}</td>
+        <td>{{ c.orden }}</td>
         <td>
             <a href="/admin/categorias/delete/{{ c.id }}" class="btn btn-sm btn-danger"
                onclick="return confirm('¿Eliminar categoría?')">Eliminar</a>
@@ -270,7 +275,11 @@
     </div>
     <div class="col-md-6">
         <label>Descripción</label>
-        <input name="descripcion" class="form-control" oninput="soloMayusculasComasPuntos(this)" required>
+        <input name="descripcion" class="form-control" oninput="soloMayusculasComasPuntos(this)">
+    </div>
+    <div class="col-md-6">
+        <label>Orden de aparición</label>
+        <input type="number" name="orden" class="form-control" min="1" placeholder="Ej: 1, 2, 3..." required>
     </div>
     <div class="col-12">
         <label>Texto adicional (PDF)</label>
