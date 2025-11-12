@@ -414,14 +414,26 @@ def admin_delete_categoria(cat_id):
 @app.route("/admin/intencion_base/create", methods=["POST"])
 @login_required(role="admin")
 def admin_create_int_base():
-    frase = request.form["frase"]
+    frase = request.form["frase"].strip()
 
-    conn = get_db(); cur = conn.cursor()
-    cur.execute("INSERT INTO intencion_base(frase,active) VALUES (?,1)", (frase,))
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Verificar si ya existe una frase igual (ignorando mayúsculas/minúsculas)
+    cur.execute("SELECT 1 FROM intencion_base WHERE LOWER(frase) = LOWER(?)", (frase,))
+    existe = cur.fetchone()
+
+    if existe:
+        conn.close()
+        flash("❌ Ya existe una intención base con esa frase. Intente con otra.", "error")
+        return redirect("/admin")
+
+    # Si no existe, la inserta normalmente
+    cur.execute("INSERT INTO intencion_base(frase, active) VALUES (?, 1)", (frase,))
     conn.commit()
     conn.close()
 
-    flash("Intencion creada exitosamente")
+    flash("✅ Intención creada exitosamente.", "success")
     return redirect("/admin")
 
 @app.route("/admin/intencion_base/delete/<int:id>")
