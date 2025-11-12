@@ -873,15 +873,15 @@ def funcionario_print_day():
     @app.route("/funcionario/print_day", methods=["POST"])
     @login_required()
     def funcionario_print_day():
-    from reportlab.lib.pagesizes import letter
-    from reportlab.lib import colors
-    from reportlab.platypus import Table, TableStyle, Paragraph
-    from reportlab.lib.styles import ParagraphStyle
-    from datetime import datetime
-    from textwrap import wrap
-    from reportlab.lib.units import cm
-    import io
-    
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib import colors
+        from reportlab.platypus import Table, TableStyle, Paragraph
+        from reportlab.lib.styles import ParagraphStyle
+        from datetime import datetime
+        from textwrap import wrap
+        from reportlab.lib.units import cm
+        import io
+        
     dia = request.form["dia"]
     
     conn = get_db(); cur = conn.cursor()
