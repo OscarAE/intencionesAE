@@ -1000,7 +1000,7 @@ def funcionario_print_day():
     
         c.setFont("Helvetica", 8)
         c.setFillGray(0.3)  # gris suave (0 = negro, 1 = blanco)
-        c.drawString(210, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
+        c.drawString(220, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
         c.setFillGray(0)  # restaurar color a negro por si se dibuja algo más después
     
         c.save()
