@@ -990,26 +990,28 @@ def funcionario_print_day():
             y_line = y_text_start + (len(wrapped_lines) - i - 1) * 12
             c.drawCentredString(w / 2, y_line, line)
     
-    # ======== PIE DE PÁGINA ========
-    usuario = session["username"]
-    now = datetime.now()
-    dia_imp = dias[now.strftime("%A")]
-    mes_imp = meses[now.strftime("%B")]
-    hora_imp = now.strftime("%I:%M %p").upper()
-    fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
-
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(210, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
-
-    c.save()
-    buffer.seek(0)
-
-    return send_file(
-        buffer,
-        mimetype="application/pdf",
-        as_attachment=True,
-        download_name=f"intenciones_{dia}.pdf"
-    )
+        # ======== PIE DE PÁGINA (gris suave y tamaño menor) ========
+        usuario = session["username"]
+        now = datetime.now()
+        dia_imp = dias[now.strftime("%A")]
+        mes_imp = meses[now.strftime("%B")]
+        hora_imp = now.strftime("%I:%M %p").upper()
+        fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
+    
+        c.setFont("Helvetica", 8)
+        c.setFillGray(0.3)  # gris suave (0 = negro, 1 = blanco)
+        c.drawString(210, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
+        c.setFillGray(0)  # restaurar color a negro por si se dibuja algo más después
+    
+        c.save()
+        buffer.seek(0)
+    
+        return send_file(
+            buffer,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=f"intenciones_{dia}.pdf"
+        )
 
 @app.route("/debug_int_raw2")
 def debug_int_raw2():
