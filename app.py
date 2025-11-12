@@ -801,49 +801,44 @@ def funcionario_print_day():
     import locale, io
 
     dia = request.form["dia"]
-    
     conn = get_db()
     cur = conn.cursor()
 
-    # Texto global (lo guardamos para ponerlo al final)
+    # Texto global guardado
     cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
     row = cur.fetchone()
     global_text = row["value"] if row else ""
 
-    # Misas
+    # Datos de misas del día
     cur.execute("SELECT * FROM misas WHERE fecha=? ORDER BY hora", (dia,))
     misas = cur.fetchall()
 
+    # ======== CONFIG PDF ========
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     w, h = letter
 
-    # ======== FONDO / MARCA DE AGUA ========
-    def dibujar_fondo(canvas):
+    # ======== FUNCIONES AUXILIARES ========
+    def dibujar_fondo(c):
+        """Fondo completo y encabezado"""
         try:
-            canvas.saveState()
-            canvas.drawImage(
-                "static/borde.png",
-                0, 0,
-                width=w,
-                height=h,
+            c.saveState()
+            # Fondo
+            c.drawImage("static/borde.png", 0, 0, width=w, height=h, mask="auto")
+            # Título superior
+            logo_width = 400
+            logo_height = 65
+            c.drawImage(
+                "static/titulo.png",
+                (w - logo_width) / 2,
+                h - 110,
+                width=logo_width,
+                height=logo_height,
                 mask="auto"
             )
-            canvas.restoreState()
+            c.restoreState()
         except Exception as e:
-            print("Error cargando fondo:", e)
-
-    dibujar_fondo(c)
-
-    # ======== LOGO Y TÍTULO SUPERIOR ========
-    try:
-        logo_width = 400
-        logo_height = 65
-        c.drawImage("static/titulo.png", (w - logo_width) / 2, h - 110, width=logo_width, height=logo_height)
-    except:
-        pass
-
-    y = h - 130
+            print("Error cargando imágenes:", e)
 
     # ======== FECHA EN ESPAÑOL ========
     try:
@@ -869,37 +864,14 @@ def funcionario_print_day():
     mes_esp = meses[fecha_dt.strftime("%B")]
     fecha_formateada = f"{dia_esp} {fecha_dt.day} DE {mes_esp} DE {fecha_dt.year}"
 
-    c.setFont("Helvetica-Bold", 11)
-    c.drawCentredString(w / 2, y, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-    y -= 30
-
-    # ======== CONTENIDO DE LAS MISAS ========
-    # Traductores de día y mes
-    dias = {
-        "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
-        "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"
-    }
-    meses = {
-        "January": "ENERO", "February": "FEBRERO", "March": "MARZO", "April": "ABRIL",
-        "May": "MAYO", "June": "JUNIO", "July": "JULIO", "August": "AGOSTO",
-        "September": "SEPTIEMBRE", "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
-    }
-
-    # Datos de misas del día
-    cur.execute("SELECT * FROM misas WHERE fecha=? ORDER BY hora", (dia,))
-    misas = cur.fetchall()
-
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    w, h = letter
-
-    def dibujar_fondo(c):
-        c.setFont("Helvetica-Bold", 14)
-        c.drawCentredString(w / 2, h - 50, f"INTENCIONES DEL DÍA {dia.upper()}")
-
+    # ======== DIBUJAR FONDO Y ENCABEZADO ========
     dibujar_fondo(c)
-    y = h - 80
 
+    c.setFont("Helvetica-Bold", 11)
+    c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+    y = h - 160
+
+    # ======== CONTENIDO ========
     for misa in misas:
         c.setFont("Helvetica-Bold", 12)
         c.drawString(50, y, f"MISA {misa['hora']} {misa['ampm']}")
@@ -957,7 +929,6 @@ def funcionario_print_day():
                     ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                     ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-                    ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),
                 ]))
                 w_table, h_table = t.wrapOn(c, w - 100, y)
                 t.drawOn(c, 50, y - h_table)
@@ -999,12 +970,13 @@ def funcionario_print_day():
                     y -= 10
                 y -= 10
 
+            # Nueva página si se llena
             if y < 120:
                 c.showPage()
                 dibujar_fondo(c)
-                y = h - 40
+                y = h - 80
 
-    # ======== TEXTO GLOBAL (centrado, márgenes 2.5 cm, lectura normal) ========
+    # ======== TEXTO GLOBAL ========
     global_text = request.form.get("texto_global", "").strip()
     if global_text:
         text_width = w - (5 * cm)
@@ -1025,7 +997,6 @@ def funcionario_print_day():
     c.setFont("Helvetica", 8)
     c.setFillGray(0.3)
     c.drawString(220, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
-    c.setFillGray(0)
     c.save()
 
     buffer.seek(0)
@@ -1035,6 +1006,7 @@ def funcionario_print_day():
         as_attachment=True,
         download_name=f"intenciones_{dia}.pdf"
     )
+
 
     @app.route("/debug_int_raw2")
     def debug_int_raw2():
