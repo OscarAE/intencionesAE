@@ -930,21 +930,20 @@ def funcionario_print_day():
                 categorias[-1][1].append(it)
 
         for cat_nombre, cat_items in categorias:
-            nombre_upper = cat_nombre.upper().strip()
+            nombre_upper = (cat_nombre or "").upper().strip()
+            print(f"🔎 CATEGORÍA DETECTADA: [{nombre_upper}]  — {len(cat_items)} intenciones")
 
             c.setFont("Helvetica-Bold", 10)
             c.drawString(50, y, nombre_upper)
             y -= 15
 
-            # Detectar correctamente DIFUNTOS
-            if any(x in nombre_upper for x in ["DIFUNT", "FALLECID", "DEFUNTO"]):
-                print("📜 Generando tabla DIFUNTOS para categoría:", nombre_upper)
+            if "DIFUNT" in nombre_upper:
+                print("📜 Entrando al bloque DIFUNTOS para:", nombre_upper)
 
                 data = []
                 fila = []
                 for it in cat_items:
-                    texto = (it["peticiones"] or "").strip()
-                    fila.append(Paragraph(texto, small_style))
+                    fila.append(Paragraph(it["peticiones"] or "", small_style))
                     if len(fila) == 3:
                         data.append(fila)
                         fila = []
@@ -955,17 +954,13 @@ def funcionario_print_day():
 
                 x_ini = 2 * cm
                 col_width = (w - 4 * cm) / 3
-                table = Table(data, colWidths=[col_width] * 3)
-                table.setStyle(TableStyle([
-                    ('GRID', (0, 0), (-1, -1), 0.2, colors.lightgrey),
+                t = Table(data, colWidths=[col_width] * 3)
+                t.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 4),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-                    ('TOPPADDING', (0, 0), (-1, -1), 2),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
                 ]))
-                w_table, h_table = table.wrapOn(c, w - 4 * cm, y)
-                table.drawOn(c, x_ini, y - h_table)
+                w_table, h_table = t.wrapOn(c, w - 4 * cm, y)
+                t.drawOn(c, x_ini, y - h_table)
                 y -= h_table + 20
 
             elif "SALUD" in nombre_upper:
@@ -993,6 +988,7 @@ def funcionario_print_day():
                 y -= h_table + 20
 
             else:
+                print("➡️ Entrando al bloque ELSE (lista con bullets) para:", nombre_upper)
                 c.setFont("Helvetica", 8)
                 for it in cat_items:
                     texto = f"• {it['peticiones'] or ''}"
