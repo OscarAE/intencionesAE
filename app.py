@@ -868,12 +868,13 @@ def funcionario_print_day():
         hora_imp = now.strftime("%I:%M %p").upper()
         fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
 
+        # Texto inferior: información del usuario
         c.setFont("Helvetica", 8)
         c.setFillGray(0.3)
         c.drawString(50, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
 
-        # Número de página alineado al mismo margen del texto global
-        c.drawString(50, 40, f"Página {num_pagina} de {total_paginas}")
+        # Número de página alineado a la derecha
+        c.drawRightString(w - 50, 55, f"Página {num_pagina} de {total_paginas}")
 
         # Solo en la última página: texto global
         if total_paginas == num_pagina and global_text:
