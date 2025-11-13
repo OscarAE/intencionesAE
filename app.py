@@ -804,11 +804,10 @@ def funcionario_print_day():
     from reportlab.lib import colors
     from reportlab.platypus import Table, TableStyle, Paragraph
     from reportlab.lib.styles import ParagraphStyle
-    from reportlab.lib.units import cm
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.utils import ImageReader
     from datetime import datetime
     from textwrap import wrap
+    from reportlab.lib.units import cm
+    from reportlab.pdfgen import canvas
     import locale, io
 
     dia = request.form["dia"]
@@ -820,13 +819,55 @@ def funcionario_print_day():
     row = cur.fetchone()
     global_text = row["value"].strip() if row else ""
 
-    # === Misas ===
+    # === MISAS DEL DÍA ===
     cur.execute("SELECT * FROM misas WHERE fecha=? ORDER BY hora", (dia,))
     misas = cur.fetchall()
 
+    # === CONFIGURACIÓN PDF ===
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
     w, h = letter
+    paginas = []  # guardaremos las posiciones donde terminan las páginas
 
-    # === FECHAS ===
+    # === FUNCIONES ===
+    def fondo_encabezado():
+        """Dibuja el fondo y encabezado en cada página"""
+        try:
+            c.saveState()
+            c.drawImage("static/borde.png", 0, 0, width=w, height=h, mask="auto")
+            logo_w, logo_h = 400, 65
+            c.drawImage(
+                "static/titulo.png",
+                (w - logo_w) / 2,
+                h - 110,
+                width=logo_w,
+                height=logo_h,
+                mask="auto"
+            )
+            c.restoreState()
+        except Exception as e:
+            print("⚠️ Error al cargar imágenes:", e)
+
+    def pie_pagina(num, total):
+        """Dibuja pie con usuario, fecha y numeración"""
+        usuario = session["username"]
+        now = datetime.now()
+        dias = {
+            "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
+            "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"
+        }
+        meses = {
+            "January": "ENERO", "February": "FEBRERO", "March": "MARZO", "April": "ABRIL",
+            "May": "MAYO", "June": "JUNIO", "July": "JULIO", "August": "AGOSTO",
+            "September": "SEPTIEMBRE", "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
+        }
+        fecha_imp = f"{dias[now.strftime('%A')]} {now.day} DE {meses[now.strftime('%B')]} DE {now.year} A LAS {now.strftime('%I:%M %p').upper()}"
+        c.setFont("Helvetica", 8)
+        c.setFillGray(0.3)
+        c.drawString(50, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
+        c.drawString(50, 40, f"Página {num} de {total}")
+
+    # === FECHA EN ESPAÑOL ===
     try:
         locale.setlocale(locale.LC_TIME, "es_ES.utf8")
     except:
@@ -846,58 +887,15 @@ def funcionario_print_day():
     }
 
     fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
-    dia_esp = dias[fecha_dt.strftime("%A")]
-    mes_esp = meses[fecha_dt.strftime("%B")]
-    fecha_formateada = f"{dia_esp} {fecha_dt.day} DE {mes_esp} DE {fecha_dt.year}"
+    fecha_formateada = f"{dias[fecha_dt.strftime('%A')]} {fecha_dt.day} DE {meses[fecha_dt.strftime('%B')]} DE {fecha_dt.year}"
 
-    # === Función para nuevo canvas temporal ===
-    def nueva_pagina():
-        temp_buffer = io.BytesIO()
-        c = canvas.Canvas(temp_buffer, pagesize=letter)
-        c._temp_buffer = temp_buffer
-        return c
-
-    # === Encabezado + fondo ===
-    def dibujar_fondo_y_encabezado(c):
-        try:
-            c.saveState()
-            c.drawImage("static/borde.png", 0, 0, width=w, height=h, mask="auto")
-            c.drawImage(
-                "static/titulo.png",
-                (w - 400) / 2,
-                h - 110,
-                width=400,
-                height=65,
-                mask="auto"
-            )
-            c.restoreState()
-        except Exception as e:
-            print("⚠️ Error cargando imágenes:", e)
-
-    # === Pie de página ===
-    def dibujar_pie(c, num_pagina, total_paginas):
-        usuario = session["username"]
-        now = datetime.now()
-        dia_imp = dias[now.strftime("%A")]
-        mes_imp = meses[now.strftime("%B")]
-        hora_imp = now.strftime("%I:%M %p").upper()
-        fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
-
-        c.setFont("Helvetica", 8)
-        c.setFillGray(0.3)
-        # Texto del pie centrado
-        c.drawString(220, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
-        # Numeración a la izquierda (alineada con el texto global)
-        c.drawString(50, 55, f"Página {num_pagina} de {total_paginas}")
-
-    # === Generar páginas individuales ===
-    canvases = []
-    c = nueva_pagina()
-    dibujar_fondo_y_encabezado(c)
+    # === PRIMERA PÁGINA ===
+    fondo_encabezado()
     c.setFont("Helvetica-Bold", 11)
     c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
     y = h - 160
 
+    # === CONTENIDO ===
     for misa in misas:
         c.setFont("Helvetica-Bold", 12)
         c.drawString(50, y, f"MISA {misa['hora']} {misa['ampm']}")
@@ -954,13 +952,23 @@ def funcionario_print_day():
                     ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey)
                 ]))
                 w_table, h_table = t.wrapOn(c, w - 100, y)
+                if y - h_table < 120:
+                    paginas.append(c.getPageNumber())
+                    c.showPage()
+                    fondo_encabezado()
+                    y = h - 100
                 t.drawOn(c, 50, y - h_table)
                 y -= h_table + 20
 
             elif "SALUD" in nombre_upper:
                 texto = ", ".join([it["peticiones"] for it in cat_items if it["peticiones"]])
-                c.setFont("Helvetica", 8)
                 for line in wrap(texto, 100):
+                    if y < 120:
+                        paginas.append(c.getPageNumber())
+                        c.showPage()
+                        fondo_encabezado()
+                        y = h - 100
+                    c.setFont("Helvetica", 8)
                     c.drawString(60, y, line)
                     y -= 10
                 y -= 10
@@ -978,59 +986,49 @@ def funcionario_print_day():
                     ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey)
                 ]))
                 w_table, h_table = t.wrapOn(c, w - 100, y)
+                if y - h_table < 120:
+                    paginas.append(c.getPageNumber())
+                    c.showPage()
+                    fondo_encabezado()
+                    y = h - 100
                 t.drawOn(c, 50, y - h_table)
                 y -= h_table + 20
 
             else:
-                c.setFont("Helvetica", 8)
                 for it in cat_items:
                     texto = f"• {it['peticiones'] or ''}"
                     if it['ofrece']:
                         texto += f" — OFRECE: {it['ofrece']}"
                     for line in wrap(texto, 100):
+                        if y < 120:
+                            paginas.append(c.getPageNumber())
+                            c.showPage()
+                            fondo_encabezado()
+                            y = h - 100
+                        c.setFont("Helvetica", 8)
                         c.drawString(60, y, line)
                         y -= 10
                     y -= 5
 
-            if y < 120:
-                canvases.append(c)
-                c = nueva_pagina()
-                dibujar_fondo_y_encabezado(c)
-                y = h - 100
-
-    canvases.append(c)
-
-    # === Combinar todas las páginas en un PDF final ===
-    final_buffer = io.BytesIO()
-    final_canvas = canvas.Canvas(final_buffer, pagesize=letter)
-    total_paginas = len(canvases)
-
-    for i, temp_c in enumerate(canvases, start=1):
-        temp_c.save()
-        temp_c._temp_buffer.seek(0)
-        img = ImageReader(temp_c._temp_buffer)
-        final_canvas.drawImage(img, 0, 0, width=w, height=h)
-        # Pie de página
-        dibujar_pie(final_canvas, i, total_paginas)
-        # Texto global solo en la última página
-        if i == total_paginas and global_text:
+    # === NUMERAR Y AÑADIR PIE ===
+    total_paginas = c.getPageNumber()
+    for num in range(1, total_paginas + 1):
+        c.showPage()
+        fondo_encabezado()
+        pie_pagina(num, total_paginas)
+        # Solo el texto global en la última página
+        if num == total_paginas and global_text:
             wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
-            final_canvas.setFont("Helvetica-Bold", 9)
+            c.setFont("Helvetica-Bold", 9)
             for j, line in enumerate(wrapped_lines):
                 y_line = (2 * cm) + 20 + (len(wrapped_lines) - j - 1) * 12
-                final_canvas.drawString(50, y_line, line)
-        if i < total_paginas:
-            final_canvas.showPage()
+                c.drawString(50, y_line, line)
 
-    final_canvas.save()
-
-    final_buffer.seek(0)
-    return send_file(
-        final_buffer,
-        mimetype="application/pdf",
-        as_attachment=True,
-        download_name=f"intenciones_{dia}.pdf"
-    )
+    c.save()
+    buffer.seek(0)
+    return send_file(buffer, mimetype="application/pdf",
+                     as_attachment=True,
+                     download_name=f"intenciones_{dia}.pdf")
 
 # ============================================================
 #  VERIFICA AL DB
