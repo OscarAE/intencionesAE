@@ -809,17 +809,18 @@ def funcionario_print_day():
     from reportlab.lib.units import cm
     from reportlab.pdfgen import canvas
     import locale, io
+    from flask import send_file, session
 
     dia = request.form["dia"]
     conn = get_db()
     cur = conn.cursor()
 
-    # === TEXTO GLOBAL DESDE BD (se imprime solo en la última página) ===
+    # === TEXTO GLOBAL DESDE BD ===
     cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
     row = cur.fetchone()
     global_text = row["value"].strip() if row else ""
 
-    # === Misas del día ===
+    # === MISAS DEL DÍA ===
     cur.execute("SELECT * FROM misas WHERE fecha=? ORDER BY hora", (dia,))
     misas = cur.fetchall()
 
@@ -827,26 +828,11 @@ def funcionario_print_day():
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     w, h = letter
-
-    # === DICCIONARIOS FECHA ===
-    dias = {
-        "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
-        "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"
-    }
-    meses = {
-        "January": "ENERO", "February": "FEBRERO", "March": "MARZO", "April": "ABRIL",
-        "May": "MAYO", "June": "JUNIO", "July": "JULIO", "August": "AGOSTO",
-        "September": "SEPTIEMBRE", "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
-    }
-
-    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
-    dia_esp = dias[fecha_dt.strftime("%A")]
-    mes_esp = meses[fecha_dt.strftime("%B")]
-    fecha_formateada = f"{dia_esp} {fecha_dt.day} DE {mes_esp} DE {fecha_dt.year}"
+    num_pagina = 1
 
     # === FUNCIONES AUXILIARES ===
     def fondo_encabezado():
-        """Fondo e imagen del título"""
+        """Dibuja fondo e imagen de encabezado."""
         try:
             c.saveState()
             c.drawImage("static/borde.png", 0, 0, width=w, height=h, mask="auto")
@@ -862,10 +848,21 @@ def funcionario_print_day():
         except Exception as e:
             print("⚠️ Error cargando imágenes:", e)
 
-    def pie_pagina(num, total):
-        """Pie con usuario, fecha y numeración"""
+    def pie_pagina(num_pagina, total_paginas):
+        """Dibuja texto global (solo última página) y pie de página con número."""
         usuario = session["username"]
         now = datetime.now()
+
+        dias = {
+            "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
+            "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"
+        }
+        meses = {
+            "January": "ENERO", "February": "FEBRERO", "March": "MARZO", "April": "ABRIL",
+            "May": "MAYO", "June": "JUNIO", "July": "JULIO", "August": "AGOSTO",
+            "September": "SEPTIEMBRE", "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
+        }
+
         dia_imp = dias[now.strftime("%A")]
         mes_imp = meses[now.strftime("%B")]
         hora_imp = now.strftime("%I:%M %p").upper()
@@ -874,20 +871,47 @@ def funcionario_print_day():
         c.setFont("Helvetica", 8)
         c.setFillGray(0.3)
         c.drawString(50, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
-        if total:
-            c.drawString(480, 55, f"Página {num} de {total}")
-        else:
-            c.drawString(480, 55, f"Página {num}")
 
-    # === PREPARAR CONTENIDO ===
-    pages = []  # guardaremos cada "página" temporal en memoria
+        # Número de página alineado al mismo margen del texto global
+        c.drawString(50, 40, f"Página {num_pagina} de {total_paginas}")
 
-    # === INICIO ===
+        # Solo en la última página: texto global
+        if total_paginas == num_pagina and global_text:
+            wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
+            c.setFont("Helvetica-Bold", 9)
+            for i, line in enumerate(wrapped_lines):
+                y_line = (2 * cm) + 60 + (len(wrapped_lines) - i - 1) * 12
+                c.drawCentredString(w / 2, y_line, line)
+
+    # === FECHA EN ESPAÑOL ===
+    try:
+        locale.setlocale(locale.LC_TIME, "es_ES.utf8")
+    except:
+        try:
+            locale.setlocale(locale.LC_TIME, "es_CO.utf8")
+        except:
+            locale.setlocale(locale.LC_TIME, "")
+
+    dias = {
+        "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
+        "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"
+    }
+    meses = {
+        "January": "ENERO", "February": "FEBRERO", "March": "MARZO", "April": "ABRIL",
+        "May": "MAYO", "June": "JUNIO", "July": "JULIO", "August": "AGOSTO",
+        "September": "SEPTIEMBRE", "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
+    }
+
+    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
+    dia_esp = dias[fecha_dt.strftime("%A")]
+    mes_esp = meses[fecha_dt.strftime("%B")]
+    fecha_formateada = f"{dia_esp} {fecha_dt.day} DE {mes_esp} DE {fecha_dt.year}"
+
+    # === INICIO DE PÁGINA ===
     fondo_encabezado()
     c.setFont("Helvetica-Bold", 11)
     c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
     y = h - 160
-    num_pagina = 1
 
     # === CONTENIDO ===
     for misa in misas:
@@ -923,7 +947,6 @@ def funcionario_print_day():
             else:
                 categorias[-1][1].append(it)
 
-        # Iterar por categorías
         for cat_nombre, cat_items in categorias:
             nombre_upper = cat_nombre.upper()
 
@@ -931,7 +954,6 @@ def funcionario_print_day():
             c.drawString(50, y, nombre_upper)
             y -= 15
 
-            # === DIFUNTOS ===
             if "DIFUNT" in nombre_upper:
                 data = [[Paragraph("PETICIONES", header_style)] * 4]
                 fila = []
@@ -944,38 +966,23 @@ def funcionario_print_day():
                     while len(fila) < 4:
                         fila.append(Paragraph("", cell_style))
                     data.append(fila)
-
                 t = Table(data, colWidths=[110]*4)
                 t.setStyle(TableStyle([
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
                     ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey)
                 ]))
                 w_table, h_table = t.wrapOn(c, w - 100, y)
-                if y - h_table < 120:
-                    pie_pagina(num_pagina, None)
-                    num_pagina += 1
-                    c.showPage()
-                    fondo_encabezado()
-                    y = h - 100
                 t.drawOn(c, 50, y - h_table)
                 y -= h_table + 20
 
-            # === SALUD ===
             elif "SALUD" in nombre_upper:
                 texto = ", ".join([it["peticiones"] for it in cat_items if it["peticiones"]])
                 for line in wrap(texto, 100):
-                    if y < 120:
-                        pie_pagina(num_pagina, None)
-                        num_pagina += 1
-                        c.showPage()
-                        fondo_encabezado()
-                        y = h - 100
                     c.setFont("Helvetica", 8)
                     c.drawString(60, y, line)
                     y -= 10
                 y -= 10
 
-            # === ACCIÓN DE GRACIAS ===
             elif "GRACIAS" in nombre_upper:
                 data = [[Paragraph("PETICIONES", header_style), Paragraph("OFRECE", header_style)]]
                 for it in cat_items:
@@ -989,45 +996,32 @@ def funcionario_print_day():
                     ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey)
                 ]))
                 w_table, h_table = t.wrapOn(c, w - 100, y)
-                if y - h_table < 120:
-                    pie_pagina(num_pagina, None)
-                    num_pagina += 1
-                    c.showPage()
-                    fondo_encabezado()
-                    y = h - 100
                 t.drawOn(c, 50, y - h_table)
                 y -= h_table + 20
 
-            # === OTRAS CATEGORÍAS ===
             else:
+                c.setFont("Helvetica", 8)
                 for it in cat_items:
                     texto = f"• {it['peticiones'] or ''}"
                     if it['ofrece']:
                         texto += f" — OFRECE: {it['ofrece']}"
                     for line in wrap(texto, 100):
-                        if y < 120:
-                            pie_pagina(num_pagina, None)
-                            num_pagina += 1
-                            c.showPage()
-                            fondo_encabezado()
-                            y = h - 100
-                        c.setFont("Helvetica", 8)
                         c.drawString(60, y, line)
                         y -= 10
                     y -= 5
 
+            # Salto de página con numeración estimada
+            if y < 120:
+                pie_pagina(num_pagina, num_pagina + 1)
+                num_pagina += 1
+                c.showPage()
+                fondo_encabezado()
+                y = h - 100
+
     # === ÚLTIMA PÁGINA ===
-    total_paginas = num_pagina
-    pie_pagina(total_paginas, total_paginas)
-
-    if global_text:
-        wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
-        c.setFont("Helvetica-Bold", 9)
-        for j, line in enumerate(wrapped_lines):
-            y_line = (2 * cm) + 20 + (len(wrapped_lines) - j - 1) * 12
-            c.drawString(50, y_line, line)
-
+    pie_pagina(num_pagina, num_pagina)
     c.save()
+
     buffer.seek(0)
     return send_file(buffer, mimetype="application/pdf",
                      as_attachment=True,
@@ -1175,7 +1169,7 @@ def admin_seed():
         (misa_id, cat_map["DIFUNTOS"], "RUIZ SARMIENTO Y BELTRAN OSORIO", "", None),
 
         # Varios
-        (misa_id, cat_map["VARIOS"], "POR TODOS LOS APRTICIPANTES DE LA CAMPAÑA SALVADME REINA DE FATIMA", "", None),
+        (misa_id, cat_map["VARIOS"], "POR TODOS LOS PARTICIPANTES DE LA CAMPAÑA SALVADME REINA DE FATIMA", "", None),
         (misa_id, cat_map["VARIOS"], "POR TODOS LOS BENEFACTORES DE ESTA OBRA", "", None),
         (misa_id, cat_map["VARIOS"], "EN REPARACION POR LAS OFENSAS HECHAS AL SAGRADO CORAZON Y AL INMACULADO CORAZON DE MARIA", "FAMILIA RUIZ RUIZ", None),
         (misa_id, cat_map["VARIOS"], "POR EL TRABAJO DE EDGAR SIERRA", "", None),
