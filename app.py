@@ -848,7 +848,7 @@ def funcionario_print_day():
             print("⚠️ Error cargando imágenes:", e)
 
     def pie_pagina(num_pagina, total_paginas):
-        """Dibuja pie de página (sin texto global)."""
+        """Dibuja pie de página."""
         usuario = session["username"]
         now = datetime.now()
 
@@ -867,11 +867,10 @@ def funcionario_print_day():
         hora_imp = now.strftime("%I:%M %p").upper()
         fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
 
-        # Mover texto y número según lo pedido
         c.setFont("Helvetica", 8)
         c.setFillGray(0.3)
-        c.drawString(80, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")  # un poco más a la derecha
-        c.drawRightString(w - 80, 55, f"Página {num_pagina} de {total_paginas}")  # un poco más a la izquierda
+        c.drawString(80, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")  # desplazado un poco a la derecha
+        c.drawRightString(w - 80, 55, f"Página {num_pagina} de {total_paginas}")  # numeración un poco más al centro
 
     # === FECHA EN ESPAÑOL ===
     try:
@@ -999,14 +998,16 @@ def funcionario_print_day():
                         y -= 10
                     y -= 5
 
+            # === SALTO DE PÁGINA ===
             if y < 120:
                 pie_pagina(num_pagina, num_pagina + 1)
                 num_pagina += 1
                 c.showPage()
                 fondo_encabezado()
-                y = h - 100
+                # 👇 Aquí bajamos medio centímetro en las siguientes páginas
+                y = h - 100 - (0.5 * cm)
 
-    # === Agregar texto global justo después del último contenido ===
+    # === TEXTO GLOBAL AL FINAL ===
     if global_text:
         y -= 10
         c.setFont("Helvetica-Bold", 9)
