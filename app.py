@@ -969,8 +969,10 @@ def funcionario_print_day():
             elif "GRACIAS" in nombre_upper:
                 data = [[Paragraph("PETICIONES", header_style), Paragraph("OFRECE", header_style)]]
                 for it in cat_items:
-                    fila = [Paragraph(it["peticiones"] or "", cell_style),
-                            Paragraph(it["ofrece"] or "", cell_style)]
+                    fila = [
+                        Paragraph(it["peticiones"] or "", cell_style),
+                        Paragraph(it["ofrece"] or "", cell_style)
+                    ]
                     data.append(fila)
                 t = Table(data, colWidths=[250, 250])
                 t.setStyle(TableStyle([
@@ -997,7 +999,7 @@ def funcionario_print_day():
                 c.setFont("Helvetica", 8)
                 for it in cat_items:
                     texto = f"• {it['peticiones'] or ''}"
-                    if it.get("ofrece"):
+                    if "ofrece" in it.keys() and it["ofrece"]:
                         texto += f" — OFRECE: {it['ofrece']}"
                     for line in wrap(texto, 100):
                         c.drawString(60, y, line)
