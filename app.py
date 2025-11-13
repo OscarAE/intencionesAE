@@ -1049,26 +1049,29 @@ def funcionario_print_day():
         download_name=f"intenciones_{dia}.pdf"
     )
 
+# ============================================================
+#  VERIFICA AL DB
+# ============================================================
+@app.route("/admin/debug_int_raw2")
+@login_required(role="admin")
+def debug_int_raw2():
+    conn = get_db()
+    cur = conn.cursor()
 
-    @app.route("/debug_int_raw2")
-    def debug_int_raw2():
-        conn = get_db()
-        cur = conn.cursor()
-    
-        # Ver las columnas
-        cur.execute("PRAGMA table_info(intenciones)")
-        columnas = cur.fetchall()
-    
-        # Ver todos los registros
-        cur.execute("SELECT * FROM intenciones")
-        registros = cur.fetchall()
-    
-        conn.close()
-    
-        return {
-            "columnas": [dict(row) for row in columnas],
-            "registros": [dict(row) for row in registros]
-        }
+    # Ver las columnas
+    cur.execute("PRAGMA table_info(intenciones)")
+    columnas = cur.fetchall()
+
+    # Ver todos los registros
+    cur.execute("SELECT * FROM intenciones")
+    registros = cur.fetchall()
+
+    conn.close()
+
+    return {
+        "columnas": [dict(row) for row in columnas],
+        "registros": [dict(row) for row in registros]
+    }
 # ============================================================
 #  CARGAR DATOS DE EJEMPLO (solo admin)
 # ============================================================
@@ -1091,16 +1094,16 @@ def admin_seed():
 
     # === 1️⃣ Crear una misa ===
     hoy = date.today().isoformat()
-    cur.execute("INSERT INTO misas (fecha, hora, ampm) VALUES (?, ?, ?)", (hoy, "07:00", "AM"))
+    cur.execute("INSERT INTO misas (fecha, hora, ampm) VALUES (?, ?, ?)", (hoy, "11:00", "AM"))
     misa_id = cur.lastrowid
 
     # === 2️⃣ Crear categorías ===
     categorias = [
-        ("ACCIÓN DE GRACIAS", "Por bendiciones recibidas", "Te damos gracias Señor", 1),
-        ("SALUD", "Por los enfermos", "Señor, dales fortaleza", 2),
-        ("DIFUNTOS", "Por los fieles difuntos", "Concédeles el descanso eterno", 3),
-        ("VARIOS", "Por diversas intenciones", "Te presentamos nuestras súplicas", 4),
-        ("INTENCIONES", "Intenciones personales", "Escucha nuestras oraciones", 5),
+        ("ACCION DE GRACIAS", "ACCION DE GRACIAS", "EN ACCION DE GRACIAS POR:", 3),
+        ("SALUD", "SALUD", "POR LA SALUD DE:", 2),
+        ("DIFUNTOS", "DIFUNTOS", "POR EL ALIVIO Y ETERNO DESCANSO DE:", 1),
+        ("VARIOS", "VARIOS", "VARIOS", 4),
+        ("INTENCIONES", "INTENCIONES", "INTENCIONES Y NECESIDADES PERSONALES DE:", 5),
     ]
     cur.executemany("""
         INSERT INTO categorias (nombre, descripcion, texto_adicional, orden, active)
@@ -1112,18 +1115,18 @@ def admin_seed():
 
     # === 3️⃣ Frases base ===
     frases = [
-        ("Por la salud de",),
-        ("Por el eterno descanso de",),
-        ("Por acción de gracias de",),
-        ("Por las intenciones de",),
-        ("Por la familia de",)
+        ("ESPIRITU SANTO",),
+        ("NUESTRO SEÑOR",),
+        ("SEÑOR DE LOS MILAGROS",),
+        ("VIRGEN DE FATIMA",),
+        ("SANTISIMA VIRGEN",)
     ]
     cur.executemany("INSERT INTO intencion_base (frase) VALUES (?)", frases)
 
     # === 4️⃣ Texto global (PDF) ===
     cur.execute("""
         INSERT INTO settings (key, value)
-        VALUES ('pdf_texto_global', 'Que nuestras súplicas sean escuchadas y nuestras acciones bendecidas. Amén.')
+        VALUES ('pdf_texto_global', 'NOS PREPARAMOS PARA LA SANTA MISA. AGRADECEMOS A TODOS COLOCAR SUS TELEFONOS EN MODO SILENCIO. AVE MARIA PURISIMA...')
     """)
 
     # === 5️⃣ Intenciones ===
