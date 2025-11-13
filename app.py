@@ -1069,6 +1069,96 @@ def funcionario_print_day():
             "columnas": [dict(row) for row in columnas],
             "registros": [dict(row) for row in registros]
         }
+# ============================================================
+#  CARGAR DATOS DE EJEMPLO (solo admin)
+# ============================================================
+
+@app.route("/admin/seed")
+@login_required(role="admin")
+def admin_seed():
+    import sqlite3
+    from datetime import date
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Evitar duplicados si ya existe algo
+    cur.execute("SELECT COUNT(*) FROM misas")
+    if cur.fetchone()[0] > 0:
+        flash("⚠️ La base de datos ya contiene registros. No se insertó nada nuevo.")
+        conn.close()
+        return redirect("/admin")
+
+    # === 1️⃣ Crear una misa ===
+    hoy = date.today().isoformat()
+    cur.execute("INSERT INTO misas (fecha, hora, ampm) VALUES (?, ?, ?)", (hoy, "07:00", "AM"))
+    misa_id = cur.lastrowid
+
+    # === 2️⃣ Crear categorías ===
+    categorias = [
+        ("ACCIÓN DE GRACIAS", "Por bendiciones recibidas", "Te damos gracias Señor", 1),
+        ("SALUD", "Por los enfermos", "Señor, dales fortaleza", 2),
+        ("DIFUNTOS", "Por los fieles difuntos", "Concédeles el descanso eterno", 3),
+        ("VARIOS", "Por diversas intenciones", "Te presentamos nuestras súplicas", 4),
+        ("INTENCIONES", "Intenciones personales", "Escucha nuestras oraciones", 5),
+    ]
+    cur.executemany("""
+        INSERT INTO categorias (nombre, descripcion, texto_adicional, orden, active)
+        VALUES (?, ?, ?, ?, 1)
+    """, categorias)
+
+    cur.execute("SELECT id, nombre FROM categorias")
+    cat_map = {row[1]: row[0] for row in cur.fetchall()}
+
+    # === 3️⃣ Frases base ===
+    frases = [
+        ("Por la salud de",),
+        ("Por el eterno descanso de",),
+        ("Por acción de gracias de",),
+        ("Por las intenciones de",),
+        ("Por la familia de",)
+    ]
+    cur.executemany("INSERT INTO intencion_base (frase) VALUES (?)", frases)
+
+    # === 4️⃣ Texto global (PDF) ===
+    cur.execute("""
+        INSERT INTO settings (key, value)
+        VALUES ('pdf_texto_global', 'Que nuestras súplicas sean escuchadas y nuestras acciones bendecidas. Amén.')
+    """)
+
+    # === 5️⃣ Intenciones ===
+    intenciones = [
+        # Acción de gracias
+        (misa_id, cat_map["ACCIÓN DE GRACIAS"], "Por la familia Pérez Rodríguez", "Familia Pérez", None),
+        (misa_id, cat_map["ACCIÓN DE GRACIAS"], "Por el cumpleaños de Ana María", "Su familia", None),
+
+        # Salud
+        (misa_id, cat_map["SALUD"], "Por la salud de Carlos Gómez", "", None),
+        (misa_id, cat_map["SALUD"], "Por la pronta recuperación de Teresa", "", None),
+
+        # Difuntos
+        (misa_id, cat_map["DIFUNTOS"], "Por el eterno descanso de Luis García", "", None),
+        (misa_id, cat_map["DIFUNTOS"], "Por las almas del purgatorio", "", None),
+
+        # Varios
+        (misa_id, cat_map["VARIOS"], "Por los jóvenes del grupo pastoral", "", None),
+        (misa_id, cat_map["VARIOS"], "Por la conversión de los pecadores", "", None),
+
+        # Intenciones
+        (misa_id, cat_map["INTENCIONES"], "Por la paz del mundo", "", None),
+        (misa_id, cat_map["INTENCIONES"], "Por el trabajo de los desempleados", "", None),
+    ]
+
+    cur.executemany("""
+        INSERT INTO intenciones (misa_id, categoria_id, peticiones, ofrece, intencion_base_id)
+        VALUES (?, ?, ?, ?, ?)
+    """, intenciones)
+
+    conn.commit()
+    conn.close()
+
+    flash("✅ Datos de ejemplo cargados exitosamente.")
+    return redirect("/admin")
 
     # ============================================================
     #  EJECUCIÓN LOCAL
