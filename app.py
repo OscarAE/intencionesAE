@@ -930,14 +930,16 @@ def funcionario_print_day():
                 categorias[-1][1].append(it)
 
         for cat_nombre, cat_items in categorias:
-            nombre_upper = cat_nombre.upper()
+            nombre_upper = cat_nombre.upper().strip()
 
             c.setFont("Helvetica-Bold", 10)
             c.drawString(50, y, nombre_upper)
             y -= 15
 
-            # === DIFUNTOS: tabla de 3 columnas, márgenes 2cm, bordes sutiles ===
-            if "DIFUNT" in nombre_upper:
+            # Detectar correctamente DIFUNTOS
+            if any(x in nombre_upper for x in ["DIFUNT", "FALLECID", "DEFUNTO"]):
+                print("📜 Generando tabla DIFUNTOS para categoría:", nombre_upper)
+
                 data = []
                 fila = []
                 for it in cat_items:
