@@ -910,7 +910,7 @@ def funcionario_print_day():
         cell_style = ParagraphStyle(name="CellStyle", fontName="Helvetica", fontSize=8, leading=10, spaceAfter=2)
         header_style = ParagraphStyle(name="HeaderStyle", fontName="Helvetica-Bold", fontSize=9, alignment=1, leading=11)
 
-        # Agrupar categorías respetando el orden definido en la BD
+        # === Agrupar categorías respetando el orden definido en la BD ===
         categorias = []
         for it in items:
             cat = it["cat_text"] or it["cat"] or "SIN CATEGORÍA"
@@ -919,8 +919,8 @@ def funcionario_print_day():
             else:
                 categorias[-1][1].append(it)
         
-        # Ahora sí iteramos las categorías en el mismo orden SQL
-        for cat_nombre, cat_items in categorias.items():
+        # === Iterar sobre la lista de categorías en el mismo orden SQL ===
+        for cat_nombre, cat_items in categorias:
             nombre_upper = cat_nombre.strip().upper().replace("Ó", "O").replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ú", "U")
         
             c.setFont("Helvetica-Bold", 10)
@@ -987,15 +987,16 @@ def funcionario_print_day():
             elif "VARIOS" in nombre_upper:
                 c.setFont("Helvetica", 8)
                 for it in cat_items:
-                    c.drawString(60, y, f"- {it['peticiones']}")
-                    y -= 10
+                    for line in wrap((it["peticiones"] or ""), 90):
+                        c.drawString(60, y, f"- {line}")
+                        y -= 10
                 y -= 10
         
-            # === INTENCIONES (u otras categorías sin formato especial) ===
+            # === OTRAS CATEGORÍAS (por defecto) ===
             else:
                 c.setFont("Helvetica", 8)
                 for it in cat_items:
-                    texto = f"• {it['peticiones']}"
+                    texto = f"• {it['peticiones'] or ''}"
                     if it.get("ofrece"):
                         texto += f" — OFRECE: {it['ofrece']}"
                     for line in wrap(texto, 100):
@@ -1003,7 +1004,7 @@ def funcionario_print_day():
                         y -= 10
                     y -= 5
         
-            # salto de página
+            # salto de página si se llena
             if y < 120:
                 c.showPage()
                 dibujar_fondo(c)
