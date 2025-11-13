@@ -752,51 +752,6 @@ def funcionario_editar(int_id):
 #  EXPORTAR CSV FUNCIONARIO
 # ============================================================
 
-@app.route("/funcionario/export_csv", methods=["POST"])
-@login_required()
-def funcionario_export_csv():
-    desde = request.form["desde"]
-    hasta = request.form["hasta"]
-
-    conn = get_db(); cur = conn.cursor()
-    cur.execute("""
-        SELECT i.*, c.nombre as categoria, b.frase as int_base,
-               m.fecha as misa_fecha, m.hora as misa_hora
-        FROM intenciones i
-        LEFT JOIN categorias c ON c.id=i.categoria_id
-        LEFT JOIN intencion_base b ON b.id=i.intencion_base_id
-        LEFT JOIN misas m ON m.id=i.misa_id
-        WHERE i.funcionario_id=? AND date(m.fecha) BETWEEN date(?) AND date(?)
-    """, (session["user_id"], desde, hasta))
-
-    rows = cur.fetchall()
-    conn.close()
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["misa_fecha","misa_hora","categoria","ofrece",
-                     "intencion_base","peticiones",
-                     "fecha_creado","fecha_actualizado"])
-
-    for r in rows:
-        writer.writerow([
-            r["misa_fecha"], r["misa_hora"], r["categoria"], r["ofrece"],
-            r["int_base"], r["peticiones"],
-            r["fecha_creado"], r["fecha_actualizado"]
-        ])
-
-    output.seek(0)
-    return send_file(
-        io.BytesIO(output.getvalue().encode("utf-8")),
-        mimetype="text/csv",
-        as_attachment=True,
-        download_name="mis_intenciones.csv"
-    )
-
-# ============================================================
-#  GENERAR PDF POR DÍA
-# ============================================================
-
 @app.route("/funcionario/print_day", methods=["POST"])
 @login_required()
 def funcionario_print_day():
@@ -841,10 +796,8 @@ def funcionario_print_day():
             print("⚠️ Error cargando imágenes:", e)
 
     def pie_pagina(num_pagina, total_paginas):
-        """Dibuja pie de página."""
         usuario = session["username"]
         now = datetime.now()
-
         dias = {
             "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
             "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"
@@ -854,7 +807,6 @@ def funcionario_print_day():
             "May": "MAYO", "June": "JUNIO", "July": "JULIO", "August": "AGOSTO",
             "September": "SEPTIEMBRE", "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
         }
-
         dia_imp = dias[now.strftime("%A")]
         mes_imp = meses[now.strftime("%B")]
         hora_imp = now.strftime("%I:%M %p").upper()
@@ -931,15 +883,14 @@ def funcionario_print_day():
 
         for cat_nombre, cat_items in categorias:
             nombre_upper = (cat_nombre or "").upper().strip()
-            print(f"🔎 CATEGORÍA DETECTADA: [{nombre_upper}]  — {len(cat_items)} intenciones")
+            cat_real = (cat_items[0]["cat"] or "").upper().strip()  # <- Nombre real BD
 
             c.setFont("Helvetica-Bold", 10)
             c.drawString(50, y, nombre_upper)
             y -= 15
 
-            if "DIFUNT" in nombre_upper:
-                print("📜 Entrando al bloque DIFUNTOS para:", nombre_upper)
-
+            # === DIFUNTOS: se detecta por texto_adicional o nombre real ===
+            if "DIFUNT" in cat_real or "DIFUNT" in nombre_upper:
                 data = []
                 fila = []
                 for it in cat_items:
@@ -956,8 +907,12 @@ def funcionario_print_day():
                 col_width = (w - 4 * cm) / 3
                 t = Table(data, colWidths=[col_width] * 3)
                 t.setStyle(TableStyle([
-                    ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
+                    ('GRID', (0, 0), (-1, -1), 0.25, colors.lightgrey),
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 2),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                    ('TOPPADDING', (0, 0), (-1, -1), 2),
                 ]))
                 w_table, h_table = t.wrapOn(c, w - 4 * cm, y)
                 t.drawOn(c, x_ini, y - h_table)
@@ -988,7 +943,6 @@ def funcionario_print_day():
                 y -= h_table + 20
 
             else:
-                print("➡️ Entrando al bloque ELSE (lista con bullets) para:", nombre_upper)
                 c.setFont("Helvetica", 8)
                 for it in cat_items:
                     texto = f"• {it['peticiones'] or ''}"
