@@ -1005,7 +1005,7 @@ def funcionario_print_day():
                 c.showPage()
                 fondo_encabezado()
                 # 👇 Aquí bajamos medio centímetro en las siguientes páginas
-                y = h - 100 - (0.5 * cm)
+                y = h - 100 - (1 * cm)
 
     # === TEXTO GLOBAL AL FINAL ===
     if global_text:
