@@ -869,8 +869,9 @@ def funcionario_print_day():
 
         c.setFont("Helvetica", 8)
         c.setFillGray(0.3)
-        c.drawString(80, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")  # desplazado un poco a la derecha
-        c.drawRightString(w - 80, 55, f"Página {num_pagina} de {total_paginas}")  # numeración un poco más al centro
+        # Mover pie un poco a la derecha y numeración un poco a la izquierda
+        c.drawString(100, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
+        c.drawRightString(w - 100, 55, f"Página {num_pagina} de {total_paginas}")
 
     # === FECHA EN ESPAÑOL ===
     try:
@@ -925,6 +926,7 @@ def funcionario_print_day():
             continue
 
         cell_style = ParagraphStyle(name="CellStyle", fontName="Helvetica", fontSize=8, leading=10)
+        small_style = ParagraphStyle(name="SmallStyle", fontName="Helvetica", fontSize=7, leading=9)
         header_style = ParagraphStyle(name="HeaderStyle", fontName="Helvetica-Bold", fontSize=9, alignment=1, leading=11)
 
         categorias = []
@@ -942,25 +944,32 @@ def funcionario_print_day():
             c.drawString(50, y, nombre_upper)
             y -= 15
 
+            # === DIFUNTOS en tabla de 3 columnas, márgenes de 2cm ===
             if "DIFUNT" in nombre_upper:
-                data = [[Paragraph("PETICIONES", header_style)] * 4]
+                data = []
                 fila = []
                 for it in cat_items:
-                    fila.append(Paragraph(it["peticiones"] or "", cell_style))
-                    if len(fila) == 4:
+                    fila.append(Paragraph(it["peticiones"] or "", small_style))
+                    if len(fila) == 3:
                         data.append(fila)
                         fila = []
                 if fila:
-                    while len(fila) < 4:
-                        fila.append(Paragraph("", cell_style))
+                    while len(fila) < 3:
+                        fila.append(Paragraph("", small_style))
                     data.append(fila)
-                t = Table(data, colWidths=[110]*4)
+
+                # márgenes laterales de 2 cm
+                x_ini = 2 * cm
+                x_fin = w - 2 * cm
+                col_width = (x_fin - x_ini) / 3
+
+                t = Table(data, colWidths=[col_width] * 3)
                 t.setStyle(TableStyle([
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey)
+                    ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
                 ]))
-                w_table, h_table = t.wrapOn(c, w - 100, y)
-                t.drawOn(c, 50, y - h_table)
+                w_table, h_table = t.wrapOn(c, w - 4 * cm, y)
+                t.drawOn(c, x_ini, y - h_table)
                 y -= h_table + 20
 
             elif "SALUD" in nombre_upper:
@@ -1004,7 +1013,7 @@ def funcionario_print_day():
                 num_pagina += 1
                 c.showPage()
                 fondo_encabezado()
-                # 👇 Aquí bajamos medio centímetro en las siguientes páginas
+                # 👇 Bajamos medio centímetro desde la segunda página
                 y = h - 100 - (1 * cm)
 
     # === TEXTO GLOBAL AL FINAL ===
