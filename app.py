@@ -1059,11 +1059,11 @@ def debug_int_raw2():
     cur = conn.cursor()
 
     # Ver las columnas
-    cur.execute("PRAGMA table_info(intencion_base)")
+    cur.execute("PRAGMA table_info(settings)")
     columnas = cur.fetchall()
 
     # Ver todos los registros
-    cur.execute("SELECT * FROM intencion_base")
+    cur.execute("SELECT * FROM settings")
     registros = cur.fetchall()
 
     conn.close()
