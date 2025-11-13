@@ -920,13 +920,15 @@ def funcionario_print_day():
                 categorias[-1][1].append(it)
         
         # Ahora sí iteramos las categorías en el mismo orden SQL
-        for cat_nombre, cat_items in categorias:
+        for cat_nombre, cat_items in categorias.items():
+            nombre_upper = cat_nombre.strip().upper().replace("Ó", "O").replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ú", "U")
+        
             c.setFont("Helvetica-Bold", 10)
-            c.drawString(50, y, cat_nombre.upper())
+            c.drawString(50, y, nombre_upper)
             y -= 15
-
+        
             # === DIFUNTOS ===
-            if cat_nombre.upper().startswith("DIFUNT"):
+            if nombre_upper.startswith("DIFUNT"):
                 data = [[Paragraph("PETICIONES", header_style)] * 4]
                 fila = []
                 for it in cat_items:
@@ -939,7 +941,7 @@ def funcionario_print_day():
                     while len(fila) < 4:
                         fila.append(Paragraph("", cell_style))
                     data.append(fila)
-
+        
                 t = Table(data, colWidths=[110]*4)
                 t.setStyle(TableStyle([
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
@@ -952,9 +954,9 @@ def funcionario_print_day():
                 w_table, h_table = t.wrapOn(c, w - 100, y)
                 t.drawOn(c, 50, y - h_table)
                 y -= h_table + 20
-
+        
             # === SALUD ===
-            elif cat_nombre.upper().startswith("SALUD"):
+            elif "SALUD" in nombre_upper:
                 peticiones = [it["peticiones"] for it in cat_items if it["peticiones"]]
                 texto = ", ".join(peticiones)
                 c.setFont("Helvetica", 8)
@@ -962,9 +964,9 @@ def funcionario_print_day():
                     c.drawString(60, y, line)
                     y -= 10
                 y -= 10
-
-            # === ACCIÓN DE GRACIAS ===
-            elif "GRACIAS" in cat_nombre.upper():
+        
+            # === ACCION DE GRACIAS ===
+            elif "GRACIAS" in nombre_upper:
                 data = [[Paragraph("PETICIONES", header_style), Paragraph("OFRECE", header_style)]]
                 for it in cat_items:
                     fila = [Paragraph(it["peticiones"] or "", cell_style),
@@ -980,14 +982,32 @@ def funcionario_print_day():
                 w_table, h_table = t.wrapOn(c, w - 100, y)
                 t.drawOn(c, 50, y - h_table)
                 y -= h_table + 20
-
+        
             # === VARIOS ===
-            elif cat_nombre.upper().startswith("VARIOS"):
+            elif "VARIOS" in nombre_upper:
                 c.setFont("Helvetica", 8)
                 for it in cat_items:
                     c.drawString(60, y, f"- {it['peticiones']}")
                     y -= 10
                 y -= 10
+        
+            # === INTENCIONES (u otras categorías sin formato especial) ===
+            else:
+                c.setFont("Helvetica", 8)
+                for it in cat_items:
+                    texto = f"• {it['peticiones']}"
+                    if it.get("ofrece"):
+                        texto += f" — OFRECE: {it['ofrece']}"
+                    for line in wrap(texto, 100):
+                        c.drawString(60, y, line)
+                        y -= 10
+                    y -= 5
+        
+            # salto de página
+            if y < 120:
+                c.showPage()
+                dibujar_fondo(c)
+                y = h - 80
 
             # Nueva página si se llena
             if y < 120:
