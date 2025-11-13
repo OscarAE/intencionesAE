@@ -1027,29 +1027,29 @@ def funcionario_print_day():
     return send_file(buffer, mimetype="application/pdf", as_attachment=True,
                      download_name=f"intenciones_{dia}.pdf")
 
-# ============================================================
-#  VERIFICA AL DB
-# ============================================================
-@app.route("/admin/debug_int_raw2")
-@login_required(role="admin")
-def debug_int_raw2():
-    conn = get_db()
-    cur = conn.cursor()
-
-    # Ver las columnas
-    cur.execute("PRAGMA table_info(categorias)")
-    columnas = cur.fetchall()
-
-    # Ver todos los registros
-    cur.execute("SELECT * FROM categorias")
-    registros = cur.fetchall()
-
-    conn.close()
-
-    return {
-        "columnas": [dict(row) for row in columnas],
-        "registros": [dict(row) for row in registros]
-    }
+    # ============================================================
+    #  VERIFICA AL DB
+    # ============================================================
+    @app.route("/admin/debug_int_raw2")
+    @login_required(role="admin")
+    def debug_int_raw2():
+        conn = get_db()
+        cur = conn.cursor()
+    
+        # Ver las columnas
+        cur.execute("PRAGMA table_info(categorias)")
+        columnas = cur.fetchall()
+    
+        # Ver todos los registros
+        cur.execute("SELECT * FROM categorias")
+        registros = cur.fetchall()
+    
+        conn.close()
+    
+        return {
+            "columnas": [dict(row) for row in columnas],
+            "registros": [dict(row) for row in registros]
+        }
 # ============================================================
 #  CARGAR DATOS DE EJEMPLO (solo admin)
 # ============================================================
