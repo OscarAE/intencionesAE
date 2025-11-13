@@ -835,14 +835,7 @@ def funcionario_print_day():
         try:
             c.saveState()
             c.drawImage("static/borde.png", 0, 0, width=w, height=h, mask="auto")
-            c.drawImage(
-                "static/titulo.png",
-                (w - 400) / 2,
-                h - 110,
-                width=400,
-                height=65,
-                mask="auto"
-            )
+            c.drawImage("static/titulo.png", (w - 400) / 2, h - 110, width=400, height=65, mask="auto")
             c.restoreState()
         except Exception as e:
             print("⚠️ Error cargando imágenes:", e)
@@ -869,7 +862,6 @@ def funcionario_print_day():
 
         c.setFont("Helvetica", 8)
         c.setFillGray(0.3)
-        # Mover pie un poco a la derecha y numeración un poco a la izquierda
         c.drawString(100, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
         c.drawRightString(w - 100, 55, f"Página {num_pagina} de {total_paginas}")
 
@@ -944,12 +936,13 @@ def funcionario_print_day():
             c.drawString(50, y, nombre_upper)
             y -= 15
 
-            # === DIFUNTOS en tabla de 3 columnas, márgenes de 2cm ===
+            # === DIFUNTOS: tabla de 3 columnas, márgenes 2cm, bordes sutiles ===
             if "DIFUNT" in nombre_upper:
                 data = []
                 fila = []
                 for it in cat_items:
-                    fila.append(Paragraph(it["peticiones"] or "", small_style))
+                    texto = (it["peticiones"] or "").strip()
+                    fila.append(Paragraph(texto, small_style))
                     if len(fila) == 3:
                         data.append(fila)
                         fila = []
@@ -958,18 +951,19 @@ def funcionario_print_day():
                         fila.append(Paragraph("", small_style))
                     data.append(fila)
 
-                # márgenes laterales de 2 cm
                 x_ini = 2 * cm
-                x_fin = w - 2 * cm
-                col_width = (x_fin - x_ini) / 3
-
-                t = Table(data, colWidths=[col_width] * 3)
-                t.setStyle(TableStyle([
-                    ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
+                col_width = (w - 4 * cm) / 3
+                table = Table(data, colWidths=[col_width] * 3)
+                table.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.2, colors.lightgrey),
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+                    ('TOPPADDING', (0, 0), (-1, -1), 2),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
                 ]))
-                w_table, h_table = t.wrapOn(c, w - 4 * cm, y)
-                t.drawOn(c, x_ini, y - h_table)
+                w_table, h_table = table.wrapOn(c, w - 4 * cm, y)
+                table.drawOn(c, x_ini, y - h_table)
                 y -= h_table + 20
 
             elif "SALUD" in nombre_upper:
@@ -1007,21 +1001,19 @@ def funcionario_print_day():
                         y -= 10
                     y -= 5
 
-            # === SALTO DE PÁGINA ===
             if y < 120:
                 pie_pagina(num_pagina, num_pagina + 1)
                 num_pagina += 1
                 c.showPage()
                 fondo_encabezado()
-                # 👇 Bajamos medio centímetro desde la segunda página
                 y = h - 100 - (1 * cm)
 
-    # === TEXTO GLOBAL AL FINAL ===
+    # === TEXTO GLOBAL ===
     if global_text:
         y -= 10
         c.setFont("Helvetica-Bold", 9)
         wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
-        for i, line in enumerate(wrapped_lines):
+        for line in wrapped_lines:
             c.drawCentredString(w / 2, y, line)
             y -= 12
 
@@ -1030,8 +1022,7 @@ def funcionario_print_day():
     c.save()
 
     buffer.seek(0)
-    return send_file(buffer, mimetype="application/pdf",
-                     as_attachment=True,
+    return send_file(buffer, mimetype="application/pdf", as_attachment=True,
                      download_name=f"intenciones_{dia}.pdf")
 
 # ============================================================
