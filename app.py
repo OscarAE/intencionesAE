@@ -1132,8 +1132,8 @@ def admin_seed():
     # === 5️⃣ Intenciones ===
     intenciones = [
         # Acción de gracias
-        (misa_id, cat_map["ACCIÓN DE GRACIAS"], "Por la familia Pérez Rodríguez", "Familia Pérez", None),
-        (misa_id, cat_map["ACCIÓN DE GRACIAS"], "Por el cumpleaños de Ana María", "Su familia", None),
+        (misa_id, cat_map["ACCION DE GRACIAS"], "Por la familia Pérez Rodríguez", "Familia Pérez", None),
+        (misa_id, cat_map["ACCION DE GRACIAS"], "Por el cumpleaños de Ana María", "Su familia", None),
 
         # Salud
         (misa_id, cat_map["SALUD"], "Por la salud de Carlos Gómez", "", None),
