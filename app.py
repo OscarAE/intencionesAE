@@ -832,7 +832,6 @@ def funcionario_print_day():
 
     # === FUNCIONES AUXILIARES ===
     def fondo_encabezado():
-        """Dibuja fondo e imagen de encabezado."""
         try:
             c.saveState()
             c.drawImage("static/borde.png", 0, 0, width=w, height=h, mask="auto")
@@ -849,7 +848,7 @@ def funcionario_print_day():
             print("⚠️ Error cargando imágenes:", e)
 
     def pie_pagina(num_pagina, total_paginas):
-        """Dibuja texto global (solo última página) y pie de página con número."""
+        """Dibuja pie de página (sin texto global)."""
         usuario = session["username"]
         now = datetime.now()
 
@@ -868,21 +867,11 @@ def funcionario_print_day():
         hora_imp = now.strftime("%I:%M %p").upper()
         fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
 
-        # Texto inferior: información del usuario
+        # Mover texto y número según lo pedido
         c.setFont("Helvetica", 8)
         c.setFillGray(0.3)
-        c.drawString(50, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
-
-        # Número de página alineado a la derecha
-        c.drawRightString(w - 50, 55, f"Página {num_pagina} de {total_paginas}")
-
-        # Solo en la última página: texto global
-        if total_paginas == num_pagina and global_text:
-            wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
-            c.setFont("Helvetica-Bold", 9)
-            for i, line in enumerate(wrapped_lines):
-                y_line = (2 * cm) + 60 + (len(wrapped_lines) - i - 1) * 12
-                c.drawCentredString(w / 2, y_line, line)
+        c.drawString(80, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")  # un poco más a la derecha
+        c.drawRightString(w - 80, 55, f"Página {num_pagina} de {total_paginas}")  # un poco más a la izquierda
 
     # === FECHA EN ESPAÑOL ===
     try:
@@ -939,7 +928,6 @@ def funcionario_print_day():
         cell_style = ParagraphStyle(name="CellStyle", fontName="Helvetica", fontSize=8, leading=10)
         header_style = ParagraphStyle(name="HeaderStyle", fontName="Helvetica-Bold", fontSize=9, alignment=1, leading=11)
 
-        # Agrupar por categoría
         categorias = []
         for it in items:
             cat = it["cat_text"] or it["cat"] or "SIN CATEGORÍA"
@@ -1011,7 +999,6 @@ def funcionario_print_day():
                         y -= 10
                     y -= 5
 
-            # Salto de página con numeración estimada
             if y < 120:
                 pie_pagina(num_pagina, num_pagina + 1)
                 num_pagina += 1
@@ -1019,7 +1006,16 @@ def funcionario_print_day():
                 fondo_encabezado()
                 y = h - 100
 
-    # === ÚLTIMA PÁGINA ===
+    # === Agregar texto global justo después del último contenido ===
+    if global_text:
+        y -= 10
+        c.setFont("Helvetica-Bold", 9)
+        wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
+        for i, line in enumerate(wrapped_lines):
+            c.drawCentredString(w / 2, y, line)
+            y -= 12
+
+    # === PIE FINAL ===
     pie_pagina(num_pagina, num_pagina)
     c.save()
 
