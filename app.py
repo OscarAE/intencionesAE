@@ -814,30 +814,29 @@ def funcionario_print_day():
     conn = get_db()
     cur = conn.cursor()
 
-    # Texto global guardado
+    # === TEXTO GLOBAL DESDE BD (se imprimirá en todas las páginas) ===
     cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
     row = cur.fetchone()
-    global_text = row["value"] if row else ""
+    global_text = row["value"].strip() if row else ""
 
-    # Datos de misas del día
+    # === Misas del día ===
     cur.execute("SELECT * FROM misas WHERE fecha=? ORDER BY hora", (dia,))
     misas = cur.fetchall()
 
-    # ======== CONFIG PDF ========
+    # === CONFIGURACIÓN PDF ===
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     w, h = letter
 
-    # ======== FUNCIONES AUXILIARES ========
-    def dibujar_fondo(c):
-        """Fondo completo y encabezado"""
+    # === FUNCIONES AUXILIARES ===
+    def dibujar_fondo_y_encabezado():
+        """Fondo, encabezado, texto global y pie de página."""
         try:
             c.saveState()
             # Fondo
             c.drawImage("static/borde.png", 0, 0, width=w, height=h, mask="auto")
-            # Título superior
-            logo_width = 400
-            logo_height = 65
+            # Encabezado (título superior)
+            logo_width, logo_height = 400, 65
             c.drawImage(
                 "static/titulo.png",
                 (w - logo_width) / 2,
@@ -848,9 +847,38 @@ def funcionario_print_day():
             )
             c.restoreState()
         except Exception as e:
-            print("Error cargando imágenes:", e)
+            print("⚠️ Error cargando imágenes:", e)
 
-    # ======== FECHA EN ESPAÑOL ========
+        # Texto global (parte inferior de la página)
+        if global_text:
+            text_width = w - (5 * cm)
+            wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
+            c.setFont("Helvetica-Bold", 9)
+            for i, line in enumerate(wrapped_lines):
+                y_line = (2 * cm) + 20 + (len(wrapped_lines) - i - 1) * 12
+                c.drawCentredString(w / 2, y_line, line)
+
+        # Pie de página
+        usuario = session["username"]
+        now = datetime.now()
+        dias = {
+            "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
+            "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"
+        }
+        meses = {
+            "January": "ENERO", "February": "FEBRERO", "March": "MARZO", "April": "ABRIL",
+            "May": "MAYO", "June": "JUNIO", "July": "JULIO", "August": "AGOSTO",
+            "September": "SEPTIEMBRE", "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
+        }
+        dia_imp = dias[now.strftime("%A")]
+        mes_imp = meses[now.strftime("%B")]
+        hora_imp = now.strftime("%I:%M %p").upper()
+        fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
+        c.setFont("Helvetica", 8)
+        c.setFillGray(0.3)
+        c.drawString(220, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
+
+    # === FECHA EN ESPAÑOL ===
     try:
         locale.setlocale(locale.LC_TIME, "es_ES.utf8")
     except:
@@ -874,14 +902,13 @@ def funcionario_print_day():
     mes_esp = meses[fecha_dt.strftime("%B")]
     fecha_formateada = f"{dia_esp} {fecha_dt.day} DE {mes_esp} DE {fecha_dt.year}"
 
-    # ======== DIBUJAR FONDO Y ENCABEZADO ========
-    dibujar_fondo(c)
-
+    # === PRIMERA PÁGINA ===
+    dibujar_fondo_y_encabezado()
     c.setFont("Helvetica-Bold", 11)
     c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
     y = h - 160
 
-    # ======== CONTENIDO ========
+    # === CONTENIDO ===
     for misa in misas:
         c.setFont("Helvetica-Bold", 12)
         c.drawString(50, y, f"MISA {misa['hora']} {misa['ampm']}")
@@ -897,20 +924,16 @@ def funcionario_print_day():
         """, (misa["id"],))
         items = cur.fetchall()
 
-        print(f"🟢 MISA {misa['id']} → {len(items)} intenciones encontradas")
-        for it in items:
-            print(f"   - {it['cat']} | {it['peticiones']}")
-
         if not items:
             c.setFont("Helvetica", 10)
             c.drawString(70, y, "No hay intenciones registradas.")
             y -= 25
             continue
 
-        cell_style = ParagraphStyle(name="CellStyle", fontName="Helvetica", fontSize=8, leading=10, spaceAfter=2)
+        cell_style = ParagraphStyle(name="CellStyle", fontName="Helvetica", fontSize=8, leading=10)
         header_style = ParagraphStyle(name="HeaderStyle", fontName="Helvetica-Bold", fontSize=9, alignment=1, leading=11)
 
-        # === Agrupar categorías respetando el orden definido en la BD ===
+        # Agrupar por categoría (respetando el orden)
         categorias = []
         for it in items:
             cat = it["cat_text"] or it["cat"] or "SIN CATEGORÍA"
@@ -918,22 +941,20 @@ def funcionario_print_day():
                 categorias.append((cat, [it]))
             else:
                 categorias[-1][1].append(it)
-        
-        # === Iterar sobre la lista de categorías en el mismo orden SQL ===
+
         for cat_nombre, cat_items in categorias:
-            nombre_upper = cat_nombre.strip().upper().replace("Ó", "O").replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ú", "U")
-        
+            nombre_upper = cat_nombre.upper()
+
             c.setFont("Helvetica-Bold", 10)
             c.drawString(50, y, nombre_upper)
             y -= 15
-        
-            # === DIFUNTOS ===
-            if nombre_upper.startswith("DIFUNT"):
+
+            # Categorías con formato especial
+            if "DIFUNT" in nombre_upper:
                 data = [[Paragraph("PETICIONES", header_style)] * 4]
                 fila = []
                 for it in cat_items:
-                    pet = Paragraph(it["peticiones"] or "", cell_style)
-                    fila.append(pet)
+                    fila.append(Paragraph(it["peticiones"] or "", cell_style))
                     if len(fila) == 4:
                         data.append(fila)
                         fila = []
@@ -941,113 +962,63 @@ def funcionario_print_day():
                     while len(fila) < 4:
                         fila.append(Paragraph("", cell_style))
                     data.append(fila)
-        
                 t = Table(data, colWidths=[110]*4)
                 t.setStyle(TableStyle([
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                    ('LINEABOVE', (0, 0), (-1, 0), 1.2, colors.black),
-                    ('LINEBELOW', (0, 0), (-1, 0), 1.2, colors.black),
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey)
                 ]))
                 w_table, h_table = t.wrapOn(c, w - 100, y)
                 t.drawOn(c, 50, y - h_table)
                 y -= h_table + 20
-        
-            # === SALUD ===
+
             elif "SALUD" in nombre_upper:
-                peticiones = [it["peticiones"] for it in cat_items if it["peticiones"]]
-                texto = ", ".join(peticiones)
-                c.setFont("Helvetica", 8)
+                texto = ", ".join([it["peticiones"] for it in cat_items if it["peticiones"]])
                 for line in wrap(texto, 100):
+                    c.setFont("Helvetica", 8)
                     c.drawString(60, y, line)
                     y -= 10
                 y -= 10
-        
-            # === ACCION DE GRACIAS ===
+
             elif "GRACIAS" in nombre_upper:
                 data = [[Paragraph("PETICIONES", header_style), Paragraph("OFRECE", header_style)]]
                 for it in cat_items:
-                    fila = [
+                    data.append([
                         Paragraph(it["peticiones"] or "", cell_style),
                         Paragraph(it["ofrece"] or "", cell_style)
-                    ]
-                    data.append(fila)
+                    ])
                 t = Table(data, colWidths=[250, 250])
                 t.setStyle(TableStyle([
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                    ('LINEABOVE', (0, 0), (-1, 0), 1.2, colors.black),
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-                    ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey)
                 ]))
                 w_table, h_table = t.wrapOn(c, w - 100, y)
                 t.drawOn(c, 50, y - h_table)
                 y -= h_table + 20
-        
-            # === VARIOS ===
-            elif "VARIOS" in nombre_upper:
-                c.setFont("Helvetica", 8)
-                for it in cat_items:
-                    for line in wrap((it["peticiones"] or ""), 90):
-                        c.drawString(60, y, f"- {line}")
-                        y -= 10
-                y -= 10
-        
-            # === OTRAS CATEGORÍAS (por defecto) ===
+
             else:
                 c.setFont("Helvetica", 8)
                 for it in cat_items:
                     texto = f"• {it['peticiones'] or ''}"
-                    if "ofrece" in it.keys() and it["ofrece"]:
+                    if it['ofrece']:
                         texto += f" — OFRECE: {it['ofrece']}"
                     for line in wrap(texto, 100):
                         c.drawString(60, y, line)
                         y -= 10
                     y -= 5
-        
-            # salto de página si se llena
+
+            # Salto de página con fondo + encabezado + global + pie
             if y < 120:
                 c.showPage()
-                dibujar_fondo(c)
-                y = h - 80
+                dibujar_fondo_y_encabezado()
+                y = h - 100
 
-            # Nueva página si se llena
-            if y < 120:
-                c.showPage()
-                dibujar_fondo(c)
-                y = h - 80
-
-    # ======== TEXTO GLOBAL ========
-    global_text = request.form.get("texto_global", "").strip()
-    if global_text:
-        text_width = w - (5 * cm)
-        wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
-        c.setFont("Helvetica-Bold", 9)
-        for i, line in enumerate(wrapped_lines):
-            y_line = (2 * cm) + 20 + (len(wrapped_lines) - i - 1) * 12
-            c.drawCentredString(w / 2, y_line, line)
-
-    # ======== PIE DE PÁGINA ========
-    usuario = session["username"]
-    now = datetime.now()
-    dia_imp = dias[now.strftime("%A")]
-    mes_imp = meses[now.strftime("%B")]
-    hora_imp = now.strftime("%I:%M %p").upper()
-    fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
-
-    c.setFont("Helvetica", 8)
-    c.setFillGray(0.3)
-    c.drawString(220, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
+    # === FINAL ===
     c.save()
-
     buffer.seek(0)
-    return send_file(
-        buffer,
-        mimetype="application/pdf",
-        as_attachment=True,
-        download_name=f"intenciones_{dia}.pdf"
-    )
+    return send_file(buffer, mimetype="application/pdf",
+                     as_attachment=True,
+                     download_name=f"intenciones_{dia}.pdf")
+
 
 # ============================================================
 #  VERIFICA AL DB
