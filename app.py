@@ -1064,7 +1064,7 @@ def funcionario_print_day():
     render_content(counting_canvas, count_only=True)
     # guardar PDF temporal (no lo vamos a usar, solo para que el canvas complete su conteo)
     counting_canvas.save()
-    total_pages = counting_canvas.page_count
+    total_pages = counting_canvas.page_count - 1
 
     # ======= SEGUNDA PASADA: dibujar final con pies y numeración =======
     buf_final = io.BytesIO()
