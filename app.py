@@ -873,7 +873,7 @@ def funcionario_print_day():
     fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
     fecha_formateada = f"{dias[fecha_dt.strftime('%A')]} {fecha_dt.day} DE {meses[fecha_dt.strftime('%B')]} DE {fecha_dt.year}"
 
-    # === PRIMER ENCABEZADO ===
+    # === FUNCIÓN SALTO DE PÁGINA ===
     def new_page():
         nonlocal num_pagina, y
         c.showPage()
@@ -883,6 +883,7 @@ def funcionario_print_day():
         y = h - 160
         num_pagina += 1
 
+    # === ENCABEZADO INICIAL ===
     fondo_encabezado()
     c.setFont("Helvetica-Bold", 11)
     c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
@@ -891,9 +892,7 @@ def funcionario_print_day():
     line_height = 10
     footer_limit = 120
 
-    # ==============================================================
-    # ===============     RECORRER MISAS Y CATEGORÍAS     ==========
-    # ==============================================================
+    # === RECORRER MISAS ===
     for misa in misas:
         c.setFont("Helvetica-Bold", 12)
         c.drawString(50, y, f"MISA {misa['hora']} {misa['ampm']}")
@@ -939,7 +938,7 @@ def funcionario_print_day():
             c.drawString(50, y, nombre_upper)
             y -= 15
 
-            # ================= DIFUNTOS =================
+            # ======== DIFUNTOS ========
             if "DIFUNT" in cat_real or "DIFUNT" in nombre_upper:
                 data, fila = [], []
                 for it in cat_items:
@@ -968,7 +967,7 @@ def funcionario_print_day():
                 y -= h_table + 20
                 continue
 
-            # ================= SALUD =================
+            # ======== SALUD ========
             elif "SALUD" in nombre_upper:
                 texto = ", ".join([it["peticiones"] for it in cat_items if it["peticiones"]])
                 wrapped = wrap(texto, 100)
@@ -982,7 +981,7 @@ def funcionario_print_day():
                 y -= 10
                 continue
 
-            # ================= GRACIAS =================
+            # ======== GRACIAS ========
             elif "GRACIAS" in nombre_upper:
                 data = [[Paragraph("PETICIONES", header_style),
                          Paragraph("OFRECE", header_style)]]
@@ -1003,7 +1002,7 @@ def funcionario_print_day():
                 y -= h_table + 20
                 continue
 
-            # ================= OTRAS =================
+            # ======== OTRAS ========
             else:
                 c.setFont("Helvetica", 8)
                 for it in cat_items:
@@ -1019,10 +1018,10 @@ def funcionario_print_day():
                     y -= 5
                 y -= 10
 
-    # ================= TEXTO GLOBAL FINAL =================
+    # ======== TEXTO GLOBAL FINAL ========
     if global_text:
         y -= 10
-        c.setFont("Helvetica-Bold", 9)
+        c.setFont("Helvetica", 9)  # <- Normal, no negrilla
         wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
         needed_h = len(wrapped_lines)*12 + 30
         if y - needed_h < footer_limit:
