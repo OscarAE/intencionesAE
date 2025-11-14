@@ -863,7 +863,7 @@ def funcionario_print_day():
         c.drawString(100, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
         c.drawRightString(w - 100, 55, f"Página {num_pagina} de {total_paginas}")
 
-    # === FECHA ===
+    # === FECHA FORMATEADA ===
     dias = {"Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
             "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"}
     meses = {"January": "ENERO","February": "FEBRERO","March": "MARZO","April": "ABRIL",
@@ -874,6 +874,15 @@ def funcionario_print_day():
     fecha_formateada = f"{dias[fecha_dt.strftime('%A')]} {fecha_dt.day} DE {meses[fecha_dt.strftime('%B')]} DE {fecha_dt.year}"
 
     # === PRIMER ENCABEZADO ===
+    def new_page():
+        nonlocal num_pagina, y
+        c.showPage()
+        fondo_encabezado()
+        c.setFont("Helvetica-Bold", 11)
+        c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+        y = h - 160
+        num_pagina += 1
+
     fondo_encabezado()
     c.setFont("Helvetica-Bold", 11)
     c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
@@ -885,7 +894,6 @@ def funcionario_print_day():
     # ==============================================================
     # ===============     RECORRER MISAS Y CATEGORÍAS     ==========
     # ==============================================================
-
     for misa in misas:
         c.setFont("Helvetica-Bold", 12)
         c.drawString(50, y, f"MISA {misa['hora']} {misa['ampm']}")
@@ -899,7 +907,6 @@ def funcionario_print_day():
             WHERE i.misa_id=?
             ORDER BY c.orden ASC
         """, (misa["id"],))
-
         items = cur.fetchall()
 
         if not items:
@@ -924,7 +931,6 @@ def funcionario_print_day():
 
         # === RECORRER CATEGORÍAS ===
         for cat_nombre, cat_items in categorias:
-
             nombre_upper = (cat_nombre or "").upper().strip()
             cat_real = (cat_items[0]["cat"] or "").upper().strip()
 
@@ -933,28 +939,21 @@ def funcionario_print_day():
             c.drawString(50, y, nombre_upper)
             y -= 15
 
-            # ======================================================
-            # ===============   TABLA DIFUNTOS   ===================
-            # ======================================================
+            # ================= DIFUNTOS =================
             if "DIFUNT" in cat_real or "DIFUNT" in nombre_upper:
-
-                data = []
-                fila = []
-
+                data, fila = [], []
                 for it in cat_items:
                     fila.append(Paragraph(it["peticiones"] or "", small_style))
                     if len(fila) == 3:
                         data.append(fila)
                         fila = []
-
                 if fila:
                     while len(fila) < 3:
                         fila.append(Paragraph("", small_style))
                     data.append(fila)
 
-                x_ini = 2 * cm
-                col_width = (w - 4 * cm) / 3
-
+                x_ini = 2*cm
+                col_width = (w - 4*cm)/3
                 t = Table(data, colWidths=[col_width]*3)
                 t.setStyle(TableStyle([
                     ('GRID',(0,0),(-1,-1),0.25,colors.lightgrey),
@@ -962,41 +961,20 @@ def funcionario_print_day():
                     ('LEFTPADDING',(0,0),(-1,-1),2),
                     ('RIGHTPADDING',(0,0),(-1,-1),2),
                 ]))
-
                 w_table, h_table = t.wrapOn(c, w, y)
-
-                # Salto si no cabe
                 if y - h_table < footer_limit:
-                    pie_pagina(num_pagina, num_pagina + 1)
-                    num_pagina += 1
-                    c.showPage()
-                    fondo_encabezado()
-                    c.setFont("Helvetica-Bold", 11)
-                    c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-                    y = h - 100
-
+                    new_page()
                 t.drawOn(c, x_ini, y - h_table)
                 y -= h_table + 20
                 continue
 
-            # ======================================================
-            # =============       SALUD       ======================
-            # ======================================================
+            # ================= SALUD =================
             elif "SALUD" in nombre_upper:
-
                 texto = ", ".join([it["peticiones"] for it in cat_items if it["peticiones"]])
                 wrapped = wrap(texto, 100)
-
-                needed_h = len(wrapped) * line_height + 20
+                needed_h = len(wrapped)*line_height + 20
                 if y - needed_h < footer_limit:
-                    pie_pagina(num_pagina, num_pagina+1)
-                    num_pagina += 1
-                    c.showPage()
-                    fondo_encabezado()
-                    c.setFont("Helvetica-Bold", 11)
-                    c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-                    y = h - 100
-
+                    new_page()
                 c.setFont("Helvetica", 8)
                 for line in wrapped:
                     c.drawString(60, y, line)
@@ -1004,111 +982,61 @@ def funcionario_print_day():
                 y -= 10
                 continue
 
-            # ======================================================
-            # =========== ACCIONES DE GRACIAS ==============
-            # ======================================================
+            # ================= GRACIAS =================
             elif "GRACIAS" in nombre_upper:
-
                 data = [[Paragraph("PETICIONES", header_style),
                          Paragraph("OFRECE", header_style)]]
-
                 for it in cat_items:
                     data.append([
                         Paragraph(it["peticiones"] or "", cell_style),
                         Paragraph(it["ofrece"] or "", cell_style)
                     ])
-
                 t = Table(data, colWidths=[250,250])
                 t.setStyle(TableStyle([
                     ('GRID',(0,0),(-1,-1),0.5,colors.black),
                     ('BACKGROUND',(0,0),(-1,0),colors.lightgrey)
                 ]))
-
                 w_table, h_table = t.wrapOn(c, w, y)
-
                 if y - h_table < footer_limit:
-                    pie_pagina(num_pagina, num_pagina+1)
-                    num_pagina += 1
-                    c.showPage()
-                    fondo_encabezado()
-                    c.setFont("Helvetica-Bold", 11)
-                    c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-                    y = h - 100
-
+                    new_page()
                 t.drawOn(c, 50, y - h_table)
                 y -= h_table + 20
                 continue
 
-            # ======================================================
-            # ===========   OTRAS CATEGORÍAS   ====================
-            # ======================================================
+            # ================= OTRAS =================
             else:
                 c.setFont("Helvetica", 8)
-
                 for it in cat_items:
-
                     texto_item = (it["peticiones"] or "").strip()
-
-                    # Corrección importante (NO USAR .get)
-                    if it["ofrece"]:
-                        texto_item_full = f"• {texto_item} — OFRECE: {it['ofrece']}"
-                    else:
-                        texto_item_full = f"• {texto_item}"
-
+                    texto_item_full = f"• {texto_item} — OFRECE: {it['ofrece']}" if it["ofrece"] else f"• {texto_item}"
                     wrapped_item = wrap(texto_item_full, 100)
-                    needed_h = len(wrapped_item) * line_height + 15
-
-                    # Salto antes de imprimir
+                    needed_h = len(wrapped_item)*line_height + 15
                     if y - needed_h < footer_limit:
-                        pie_pagina(num_pagina, num_pagina+1)
-                        num_pagina += 1
-                        c.showPage()
-                        fondo_encabezado()
-                        c.setFont("Helvetica-Bold", 11)
-                        c.drawCentredString(w/2, h-130,
-                                            f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-                        y = h - 100
-
-                    # Dibujar texto
+                        new_page()
                     for line in wrapped_item:
                         c.drawString(60, y, line)
                         y -= line_height
                     y -= 5
-
                 y -= 10
 
-    # ==============================================================
-    # ===============      TEXTO GLOBAL AL FINAL       =============
-    # ==============================================================
-
+    # ================= TEXTO GLOBAL FINAL =================
     if global_text:
         y -= 10
         c.setFont("Helvetica-Bold", 9)
         wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
-
-        needed_h = len(wrapped_lines) * 12 + 30
+        needed_h = len(wrapped_lines)*12 + 30
         if y - needed_h < footer_limit:
-            pie_pagina(num_pagina, num_pagina+1)
-            num_pagina += 1
-            c.showPage()
-            fondo_encabezado()
-            y = h - 120
-
+            new_page()
         for line in wrapped_lines:
-            c.drawCentredString(w / 2, y, line)
+            c.drawCentredString(w/2, y, line)
             y -= 12
 
     # === PIE FINAL ===
     pie_pagina(num_pagina, num_pagina)
     c.save()
-
     buffer.seek(0)
-    return send_file(
-        buffer,
-        mimetype="application/pdf",
-        as_attachment=True,
-        download_name=f"intenciones_{dia}.pdf"
-    )
+    return send_file(buffer, mimetype="application/pdf", as_attachment=True,
+                     download_name=f"intenciones_{dia}.pdf")
 
 # ============================================================
 #  VERIFICA AL DB
