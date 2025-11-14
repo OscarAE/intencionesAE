@@ -807,7 +807,7 @@ def funcionario_print_day():
     from datetime import datetime
     from textwrap import wrap
     from reportlab.lib.units import cm
-    from reportlab.pdfgen import canvas
+    from reportlab.pdfgen import canvas as rl_canvas
     import locale, io
     from flask import send_file, session
 
@@ -815,7 +815,7 @@ def funcionario_print_day():
     conn = get_db()
     cur = conn.cursor()
 
-    # === TEXTO GLOBAL ===
+    # === TEXTO GLOBAL (desde la BD) ===
     cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
     row = cur.fetchone()
     global_text = row["value"].strip() if row else ""
@@ -824,39 +824,52 @@ def funcionario_print_day():
     cur.execute("SELECT * FROM misas WHERE fecha=? ORDER BY hora", (dia,))
     misas = cur.fetchall()
 
-    # === BUFFER PARA CONTAR PÁGINAS ===
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    w, h = letter
+    # ======= Helpers / estilos comunes =======
+    line_height = 10
+    footer_limit = 120  # si el contenido queda por debajo de esta altura, hacemos salto
 
-    # 🔥 contador real
-    num_pagina = 1
-    total_paginas = 1  # luego será actualizado
+    # estilos para Paragraph (usados en tablas)
+    cell_style = ParagraphStyle(name="CellStyle", fontName="Helvetica", fontSize=8, leading=10)
+    small_style = ParagraphStyle(name="SmallStyle", fontName="Helvetica", fontSize=7, leading=9)
+    header_style = ParagraphStyle(name="HeaderStyle", fontName="Helvetica-Bold", fontSize=9, alignment=1, leading=11)
 
-    # === ENCABEZADO ===
-    def fondo_encabezado():
+    # diccionarios días/meses (español fijo para reliably)
+    dias = {"Monday": "LUNES","Tuesday": "MARTES","Wednesday": "MIÉRCOLES",
+            "Thursday": "JUEVES","Friday": "VIERNES","Saturday": "SÁBADO","Sunday": "DOMINGO"}
+    meses = {"January": "ENERO","February": "FEBRERO","March": "MARZO","April": "ABRIL",
+             "May": "MAYO","June": "JUNIO","July": "JULIO","August": "AGOSTO",
+             "September": "SEPTIEMBRE","October": "OCTUBRE","November": "NOVIEMBRE","December": "DICIEMBRE"}
+
+    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
+    fecha_formateada = f"{dias[fecha_dt.strftime('%A')]} {fecha_dt.day} DE {meses[fecha_dt.strftime('%B')]} DE {fecha_dt.year}"
+
+    # ======= Subclase Canvas para la primera pasada (solo contar páginas) =======
+    class CountingCanvas(rl_canvas.Canvas):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.page_count = 1  # empezamos en página 1
+
+        def showPage(self):
+            # cada vez que se crea una nueva página, incrementamos contador
+            self.page_count += 1
+            super().showPage()
+
+    # ======= Funciones que dibujan encabezado / pie (usadas en la segunda pasada) =======
+    def fondo_encabezado_on(c):
+        """Dibuja fondo y título superior (logo). Si no encuentra imagen, no hace crash."""
         try:
             c.saveState()
             c.drawImage("static/borde.png", 0, 0, width=w, height=h, mask="auto")
             c.drawImage("static/titulo.png", (w - 400) / 2, h - 110, width=400, height=65, mask="auto")
             c.restoreState()
         except Exception as e:
-            print("⚠️ Error cargando imágenes:", e)
+            # imprime en stdout para debugging (Render/Gunicorn)
+            print("⚠️ Error cargando imágenes (fondo/encabezado):", e)
 
-    # === PIE DE PÁGINA (SE LLAMA EN TODAS LAS PÁGINAS) ===
-    def pie_pagina(num_pagina, total_paginas):
-        usuario = session["username"]
+    def pie_pagina_on(c, num_pagina, total_paginas):
+        """Dibuja pie de página alineado: 'IMPRESO POR...' a la izquierda y 'Página X de Y' a la derecha."""
+        usuario = session.get("username", "N/A")
         now = datetime.now()
-        dias = {
-            "Monday": "LUNES","Tuesday": "MARTES","Wednesday": "MIÉRCOLES",
-            "Thursday": "JUEVES","Friday": "VIERNES","Saturday": "SÁBADO","Sunday": "DOMINGO"
-        }
-        meses = {
-            "January": "ENERO","February": "FEBRERO","March": "MARZO","April": "ABRIL",
-            "May": "MAYO","June": "JUNIO","July": "JULIO","August": "AGOSTO",
-            "September": "SEPTIEMBRE","October": "OCTUBRE","November": "NOVIEMBRE","December": "DICIEMBRE"
-        }
-
         dia_imp = dias[now.strftime("%A")]
         mes_imp = meses[now.strftime("%B")]
         hora_imp = now.strftime("%I:%M %p").upper()
@@ -866,70 +879,214 @@ def funcionario_print_day():
         c.setFillGray(0.3)
         c.drawString(100, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
         c.drawRightString(w - 100, 55, f"Página {num_pagina} de {total_paginas}")
+        c.setFillGray(0)  # restaurar
 
-    # === FECHA ENCABEZADO ===
-    dias = {"Monday": "LUNES","Tuesday": "MARTES","Wednesday": "MIÉRCOLES",
-            "Thursday": "JUEVES","Friday": "VIERNES","Saturday": "SÁBADO","Sunday": "DOMINGO"}
-    meses = {"January":"ENERO","February":"FEBRERO","March":"MARZO","April":"ABRIL",
-             "May":"MAYO","June":"JUNIO","July":"JULIO","August":"AGOSTO",
-             "September":"SEPTIEMBRE","October":"OCTUBRE","November":"NOVIEMBRE","December":"DICIEMBRE"}
+    # ======= Renderizador (misma lógica se usará en ambas pasadas) =======
+    # El flag 'count_only' determina si sólo contamos páginas (no dibujamos pies ni numeraciones),
+    # y 'page_state' es un dict para comunicar el número de página en la segunda pasada.
+    def render_content(c, count_only=False, page_state=None, total_pages=None):
+        """
+        Dibuja todo el contenido en el canvas `c`.
+        - Si count_only=True, se usan showPage() normalmente para que CountingCanvas incremente page_count.
+        - Si count_only=False, page_state debe ser un dict {'current': 1} y total_pages debe estar definido.
+          Antes de llamar a c.showPage() se dibuja el pie con pie_pagina_on(c, current, total_pages).
+        """
+        nonlocal w, h
 
-    fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
-    fecha_formateada = f"{dias[fecha_dt.strftime('%A')]} {fecha_dt.day} DE {meses[fecha_dt.strftime('%B')]} DE {fecha_dt.year}"
-
-    # === NUEVA PÁGINA CON PIE AUTOMÁTICO ===
-    def new_page():
-        nonlocal num_pagina, total_paginas, y
-
-        # 👉 imprime pie de página ANTES de cambiar de página
-        pie_pagina(num_pagina, total_paginas)
-
-        c.showPage()
-        num_pagina += 1
-        total_paginas = max(total_paginas, num_pagina)
-
-        fondo_encabezado()
+        # dibujar primer encabezado en la página actual
+        fondo_encabezado_on(c)
         c.setFont("Helvetica-Bold", 11)
         c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-        y = h - 160
-        c.setFont("Helvetica", 8)
+        y_loc = h - 160
 
-    # === PRIMERA PÁGINA ===
-    fondo_encabezado()
-    c.setFont("Helvetica-Bold", 11)
-    c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-    y = h-160
-    line_height = 10
-    footer_limit = 120
+        # función interna para crear nueva página (se usa tanto en conteo como en pase final)
+        def make_new_page():
+            nonlocal y_loc
+            if count_only:
+                c.showPage()
+                # en CountingCanvas showPage() ya incrementa page_count
+                # y volvemos a dibujar encabezado para la página siguiente
+                fondo_encabezado_on(c)
+                c.setFont("Helvetica-Bold", 11)
+                c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+                y_loc = h - 160
+            else:
+                # dibujar pie para la página actual antes de crear nueva
+                pie_pagina_on(c, page_state['current'], total_pages)
+                c.showPage()
+                # luego fondo + encabezado en la nueva página
+                fondo_encabezado_on(c)
+                c.setFont("Helvetica-Bold", 11)
+                c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+                page_state['current'] += 1
+                # bajar un poco a partir de la segunda página si así lo quieres (ya lo tenías)
+                # y mantener separación del titulo/imagen superior
+                y_loc = h - 160
 
-    # === RECORRER MISAS Y CATEGORÍAS (no modificado) ===
-    # 👉 Todo este bloque queda exactamente igual que tú lo tenías
-    #     (no lo recapitulo completo aquí para que no quede kilométrico)
-    #     SOLO se dejaron tus saltos de página que llaman new_page()
+        # Recorremos misas
+        for misa in misas:
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(50, y_loc, f"MISA {misa['hora']} {misa['ampm']}")
+            y_loc -= 18
 
-    # === (AQUÍ VA TODO EL BLOQUE QUE YA TENÍAS) ===
-    # ... TU CÓDIGO DE MISAS Y CATEGORÍAS ...
-    #     ↳ *no se toca nada*
+            cur.execute("""
+                SELECT i.*, c.nombre AS cat, c.texto_adicional AS cat_text, b.frase AS base
+                FROM intenciones i
+                LEFT JOIN categorias c ON c.id=i.categoria_id
+                LEFT JOIN intencion_base b ON b.id=i.intencion_base_id
+                WHERE i.misa_id=?
+                ORDER BY c.orden ASC, i.fecha_creado ASC
+            """, (misa["id"],))
+            items = cur.fetchall()
 
-    # === TEXTO GLOBAL ===
-    if global_text:
-        y -= 10
-        c.setFont("Helvetica", 9)
-        wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
-        needed_h = len(wrapped_lines)*12 + 30
-        if y - needed_h < footer_limit:
-            new_page()
-        for line in wrapped_lines:
-            c.drawCentredString(w/2, y, line)
-            y -= 12
+            if not items:
+                c.setFont("Helvetica", 10)
+                c.drawString(70, y_loc, "No hay intenciones registradas.")
+                y_loc -= 25
+                continue
 
-    # === PIE FINAL DE LA ÚLTIMA PÁGINA ===
-    pie_pagina(num_pagina, total_paginas)
+            # Agrupar manteniendo el orden en la lista (cat_text o cat)
+            categorias_local = []
+            for it in items:
+                cat = it["cat_text"] or it["cat"] or "SIN CATEGORÍA"
+                if not categorias_local or categorias_local[-1][0] != cat:
+                    categorias_local.append((cat, [it]))
+                else:
+                    categorias_local[-1][1].append(it)
 
+            for cat_nombre, cat_items in categorias_local:
+                nombre_upper = (cat_nombre or "").upper().strip()
+                cat_real = (cat_items[0]["cat"] or "").upper().strip()
+
+                c.setFont("Helvetica-Bold", 10)
+                c.drawString(50, y_loc, nombre_upper)
+                y_loc -= 15
+
+                # ----------------- DIFUNTOS: tabla 3 columnas, márgen 2cm -----------------
+                if "DIFUNT" in cat_real or "DIFUNT" in nombre_upper:
+                    data = []
+                    fila = []
+                    for it in cat_items:
+                        fila.append(Paragraph(it["peticiones"] or "", small_style))
+                        if len(fila) == 3:
+                            data.append(fila)
+                            fila = []
+                    if fila:
+                        while len(fila) < 3:
+                            fila.append(Paragraph("", small_style))
+                        data.append(fila)
+
+                    x_ini = 2*cm
+                    col_width = (w - 4*cm) / 3
+                    t = Table(data, colWidths=[col_width]*3)
+                    t.setStyle(TableStyle([
+                        ('GRID',(0,0),(-1,-1),0.25,colors.lightgrey),
+                        ('VALIGN',(0,0),(-1,-1),'TOP'),
+                        ('LEFTPADDING',(0,0),(-1,-1),2),
+                        ('RIGHTPADDING',(0,0),(-1,-1),2),
+                        ('BOTTOMPADDING',(0,0),(-1,-1),2),
+                        ('TOPPADDING',(0,0),(-1,-1),2),
+                    ]))
+                    w_table, h_table = t.wrapOn(c, w - 4*cm, y_loc)
+                    # si no cabe en la página actual, saltamos antes de dibujar
+                    if y_loc - h_table < footer_limit:
+                        make_new_page()
+                    t.drawOn(c, x_ini, y_loc - h_table)
+                    y_loc -= h_table + 20
+                    # continuar con siguiente categoría
+                    continue
+
+                # ----------------- SALUD: texto seguido separado por comas -----------------
+                elif "SALUD" in nombre_upper:
+                    texto = ", ".join([it["peticiones"] for it in cat_items if it["peticiones"]])
+                    wrapped = wrap(texto, 100)
+                    needed_h = len(wrapped) * line_height + 20
+                    if y_loc - needed_h < footer_limit:
+                        make_new_page()
+                    c.setFont("Helvetica", 8)
+                    for line in wrapped:
+                        c.drawString(60, y_loc, line)
+                        y_loc -= line_height
+                    y_loc -= 10
+                    continue
+
+                # ----------------- ACCIÓN DE GRACIAS: dos columnas (peticiones / ofrece) -----------------
+                elif "GRACIAS" in nombre_upper:
+                    data = [[Paragraph("PETICIONES", header_style), Paragraph("OFRECE", header_style)]]
+                    for it in cat_items:
+                        data.append([
+                            Paragraph(it["peticiones"] or "", cell_style),
+                            Paragraph(it["ofrece"] or "", cell_style)
+                        ])
+                    t = Table(data, colWidths=[(w-100)/2,(w-100)/2])
+                    t.setStyle(TableStyle([
+                        ('GRID',(0,0),(-1,-1),0.5,colors.black),
+                        ('BACKGROUND',(0,0),(-1,0),colors.lightgrey),
+                        ('LEFTPADDING',(0,0),(-1,-1),4),
+                        ('RIGHTPADDING',(0,0),(-1,-1),4),
+                    ]))
+                    w_table, h_table = t.wrapOn(c, w - 100, y_loc)
+                    if y_loc - h_table < footer_limit:
+                        make_new_page()
+                    t.drawOn(c, 50, y_loc - h_table)
+                    y_loc -= h_table + 20
+                    continue
+
+                # ----------------- VARIOS u OTRAS: listado con saltos de línea -----------------
+                else:
+                    c.setFont("Helvetica", 8)
+                    for it in cat_items:
+                        texto_item = (it["peticiones"] or "").strip()
+                        if it["ofrece"]:
+                            texto_item_full = f"• {texto_item} — OFRECE: {it['ofrece']}"
+                        else:
+                            texto_item_full = f"• {texto_item}"
+                        wrapped_item = wrap(texto_item_full, 100)
+                        needed_h = len(wrapped_item)*line_height + 15
+                        if y_loc - needed_h < footer_limit:
+                            make_new_page()
+                        for line in wrapped_item:
+                            c.drawString(60, y_loc, line)
+                            y_loc -= line_height
+                        y_loc -= 5
+                    y_loc -= 10
+
+        # Al terminar el contenido no llamamos showPage aquí: quien llama al render decide
+        return
+
+    # ======= PRIMERA PASADA: contar páginas (no pies) =======
+    # usamos CountingCanvas que incrementa page_count automáticamente en showPage()
+    buf_count = io.BytesIO()
+    counting_canvas = CountingCanvas(buf_count, pagesize=letter)
+    # variables w,h global
+    w, h = letter
+    # ejecutar render (primera pasada)
+    render_content(counting_canvas, count_only=True)
+    # guardar PDF temporal (no lo vamos a usar, solo para que el canvas complete su conteo)
+    counting_canvas.save()
+    total_pages = counting_canvas.page_count
+
+    # ======= SEGUNDA PASADA: dibujar final con pies y numeración =======
+    buf_final = io.BytesIO()
+    c = rl_canvas.Canvas(buf_final, pagesize=letter)
+    w, h = letter
+    page_state = {'current': 1}
+
+    # Llamar la misma rutina pero con page_state y total_pages
+    render_content(c, count_only=False, page_state=page_state, total_pages=total_pages)
+
+    # Al terminar el contenido en la última página dibujamos el pie (para la última)
+    pie_pagina_on(c, page_state['current'], total_pages)
+
+    # Guardar y enviar
     c.save()
-    buffer.seek(0)
-    return send_file(buffer, mimetype="application/pdf", as_attachment=True,
-                     download_name=f"intenciones_{dia}.pdf")
+    buf_final.seek(0)
+    return send_file(
+        buf_final,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"intenciones_{dia}.pdf"
+    )
 
 # ============================================================
 #  VERIFICA AL DB
