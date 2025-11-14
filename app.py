@@ -752,6 +752,51 @@ def funcionario_editar(int_id):
 #  EXPORTAR CSV FUNCIONARIO
 # ============================================================
 
+@app.route("/funcionario/export_csv", methods=["POST"])
+@login_required()
+def funcionario_export_csv():
+    desde = request.form["desde"]
+    hasta = request.form["hasta"]
+
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("""
+        SELECT i.*, c.nombre as categoria, b.frase as int_base,
+               m.fecha as misa_fecha, m.hora as misa_hora
+        FROM intenciones i
+        LEFT JOIN categorias c ON c.id=i.categoria_id
+        LEFT JOIN intencion_base b ON b.id=i.intencion_base_id
+        LEFT JOIN misas m ON m.id=i.misa_id
+        WHERE i.funcionario_id=? AND date(m.fecha) BETWEEN date(?) AND date(?)
+    """, (session["user_id"], desde, hasta))
+
+    rows = cur.fetchall()
+    conn.close()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["misa_fecha","misa_hora","categoria","ofrece",
+                     "intencion_base","peticiones",
+                     "fecha_creado","fecha_actualizado"])
+
+    for r in rows:
+        writer.writerow([
+            r["misa_fecha"], r["misa_hora"], r["categoria"], r["ofrece"],
+            r["int_base"], r["peticiones"],
+            r["fecha_creado"], r["fecha_actualizado"]
+        ])
+
+    output.seek(0)
+    return send_file(
+        io.BytesIO(output.getvalue().encode("utf-8")),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="mis_intenciones.csv"
+    )
+
+# ============================================================
+#  GENERAR PDF POR DÍA
+# ============================================================
+
 @app.route("/funcionario/print_day", methods=["POST"])
 @login_required()
 def funcionario_print_day():
@@ -770,7 +815,7 @@ def funcionario_print_day():
     conn = get_db()
     cur = conn.cursor()
 
-    # === TEXTO GLOBAL DESDE BD ===
+    # === TEXTO GLOBAL ===
     cur.execute("SELECT value FROM settings WHERE key='pdf_texto_global'")
     row = cur.fetchone()
     global_text = row["value"].strip() if row else ""
@@ -779,18 +824,13 @@ def funcionario_print_day():
     cur.execute("SELECT * FROM misas WHERE fecha=? ORDER BY hora", (dia,))
     misas = cur.fetchall()
 
-    # === CONFIGURACIÓN PDF ===
+    # === PDF INIT ===
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     w, h = letter
     num_pagina = 1
 
-    # parámetros de salto
-    footer_limit = 120         # px reservados abajo antes de activar salto (tal como pediste)
-    line_height = 10           # px por línea envuelta (confirmado)
-    espacio_entre_secciones = 20
-
-    # === FUNCIONES AUXILIARES ===
+    # === ENCABEZADO ===
     def fondo_encabezado():
         try:
             c.saveState()
@@ -800,17 +840,18 @@ def funcionario_print_day():
         except Exception as e:
             print("⚠️ Error cargando imágenes:", e)
 
-    def pie_pagina(num_pagina_local, total_paginas):
+    # === PIE DE PÁGINA ===
+    def pie_pagina(num_pagina, total_paginas):
         usuario = session["username"]
         now = datetime.now()
         dias = {
-            "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
-            "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"
+            "Monday": "LUNES","Tuesday": "MARTES","Wednesday": "MIÉRCOLES",
+            "Thursday": "JUEVES","Friday": "VIERNES","Saturday": "SÁBADO","Sunday": "DOMINGO"
         }
         meses = {
-            "January": "ENERO", "February": "FEBRERO", "March": "MARZO", "April": "ABRIL",
-            "May": "MAYO", "June": "JUNIO", "July": "JULIO", "August": "AGOSTO",
-            "September": "SEPTIEMBRE", "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
+            "January": "ENERO","February": "FEBRERO","March": "MARZO","April": "ABRIL",
+            "May": "MAYO","June": "JUNIO","July": "JULIO","August": "AGOSTO",
+            "September": "SEPTIEMBRE","October": "OCTUBRE","November": "NOVIEMBRE","December": "DICIEMBRE"
         }
         dia_imp = dias[now.strftime("%A")]
         mes_imp = meses[now.strftime("%B")]
@@ -820,41 +861,32 @@ def funcionario_print_day():
         c.setFont("Helvetica", 8)
         c.setFillGray(0.3)
         c.drawString(100, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
-        c.drawRightString(w - 100, 55, f"Página {num_pagina_local} de {total_paginas}")
+        c.drawRightString(w - 100, 55, f"Página {num_pagina} de {total_paginas}")
 
-    # === FECHA EN ESPAÑOL ===
-    try:
-        locale.setlocale(locale.LC_TIME, "es_ES.utf8")
-    except:
-        try:
-            locale.setlocale(locale.LC_TIME, "es_CO.utf8")
-        except:
-            locale.setlocale(locale.LC_TIME, "")
-
-    dias = {
-        "Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
-        "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"
-    }
-    meses = {
-        "January": "ENERO", "February": "FEBRERO", "March": "MARZO", "April": "ABRIL",
-        "May": "MAYO", "June": "JUNIO", "July": "JULIO", "August": "AGOSTO",
-        "September": "SEPTIEMBRE", "October": "OCTUBRE", "November": "NOVIEMBRE", "December": "DICIEMBRE"
-    }
+    # === FECHA ===
+    dias = {"Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
+            "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"}
+    meses = {"January": "ENERO","February": "FEBRERO","March": "MARZO","April": "ABRIL",
+             "May": "MAYO","June": "JUNIO","July": "JULIO","August": "AGOSTO",
+             "September": "SEPTIEMBRE","October": "OCTUBRE","November": "NOVIEMBRE","December": "DICIEMBRE"}
 
     fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
-    dia_esp = dias[fecha_dt.strftime("%A")]
-    mes_esp = meses[fecha_dt.strftime("%B")]
-    fecha_formateada = f"{dia_esp} {fecha_dt.day} DE {mes_esp} DE {fecha_dt.year}"
+    fecha_formateada = f"{dias[fecha_dt.strftime('%A')]} {fecha_dt.day} DE {meses[fecha_dt.strftime('%B')]} DE {fecha_dt.year}"
 
-    # === INICIO DE PÁGINA ===
+    # === PRIMER ENCABEZADO ===
     fondo_encabezado()
     c.setFont("Helvetica-Bold", 11)
-    c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-    y = h - 160
+    c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+    y = h-160
 
-    # === CONTENIDO ===
+    line_height = 10
+    footer_limit = 120
+
+    # ==============================================================
+    # ===============     RECORRER MISAS Y CATEGORÍAS     ==========
+    # ==============================================================
+
     for misa in misas:
-        # Encabezado de misa
         c.setFont("Helvetica-Bold", 12)
         c.drawString(50, y, f"MISA {misa['hora']} {misa['ampm']}")
         y -= 18
@@ -865,8 +897,9 @@ def funcionario_print_day():
             LEFT JOIN categorias c ON c.id=i.categoria_id
             LEFT JOIN intencion_base b ON b.id=i.intencion_base_id
             WHERE i.misa_id=?
-            ORDER BY c.orden ASC, i.fecha_creado ASC
+            ORDER BY c.orden ASC
         """, (misa["id"],))
+
         items = cur.fetchall()
 
         if not items:
@@ -875,207 +908,207 @@ def funcionario_print_day():
             y -= 25
             continue
 
+        # === ESTILOS ===
         cell_style = ParagraphStyle(name="CellStyle", fontName="Helvetica", fontSize=8, leading=10)
         small_style = ParagraphStyle(name="SmallStyle", fontName="Helvetica", fontSize=7, leading=9)
         header_style = ParagraphStyle(name="HeaderStyle", fontName="Helvetica-Bold", fontSize=9, alignment=1, leading=11)
 
-        # Agrupar por categoría usando el texto visible (cat_text) pero guardando el nombre real
+        # === AGRUPAR POR CATEGORÍA ===
         categorias = []
         for it in items:
-            cat_visible = it["cat_text"] or it["cat"] or "SIN CATEGORÍA"
-            if not categorias or categorias[-1][0] != cat_visible:
-                categorias.append((cat_visible, [it]))
+            cat = it["cat_text"] or it["cat"] or "SIN CATEGORÍA"
+            if not categorias or categorias[-1][0] != cat:
+                categorias.append((cat, [it]))
             else:
                 categorias[-1][1].append(it)
 
+        # === RECORRER CATEGORÍAS ===
         for cat_nombre, cat_items in categorias:
-            nombre_upper = (cat_nombre or "").upper().strip()
-            cat_real = (cat_items[0]["cat"] or "").upper().strip()  # Nombre real de BD
 
-            # título de sección
+            nombre_upper = (cat_nombre or "").upper().strip()
+            cat_real = (cat_items[0]["cat"] or "").upper().strip()
+
+            # Título de categoría
             c.setFont("Helvetica-Bold", 10)
             c.drawString(50, y, nombre_upper)
             y -= 15
 
-            # ----------------------------
-            #  DIFUNTOS: tabla 3 columnas
-            # ----------------------------
+            # ======================================================
+            # ===============   TABLA DIFUNTOS   ===================
+            # ======================================================
             if "DIFUNT" in cat_real or "DIFUNT" in nombre_upper:
-                # construir data
+
                 data = []
                 fila = []
+
                 for it in cat_items:
                     fila.append(Paragraph(it["peticiones"] or "", small_style))
                     if len(fila) == 3:
                         data.append(fila)
                         fila = []
+
                 if fila:
                     while len(fila) < 3:
                         fila.append(Paragraph("", small_style))
                     data.append(fila)
 
-                # calcular ancho y medir altura real de la tabla
                 x_ini = 2 * cm
                 col_width = (w - 4 * cm) / 3
-                table = Table(data, colWidths=[col_width] * 3)
-                table.setStyle(TableStyle([
-                    ('GRID', (0, 0), (-1, -1), 0.25, colors.lightgrey),
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 2),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 2),
-                    ('TOPPADDING', (0, 0), (-1, -1), 2),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+
+                t = Table(data, colWidths=[col_width]*3)
+                t.setStyle(TableStyle([
+                    ('GRID',(0,0),(-1,-1),0.25,colors.lightgrey),
+                    ('VALIGN',(0,0),(-1,-1),'TOP'),
+                    ('LEFTPADDING',(0,0),(-1,-1),2),
+                    ('RIGHTPADDING',(0,0),(-1,-1),2),
                 ]))
 
-                # medir altura y decidir salto
-                w_table, h_table = table.wrapOn(c, w - 4 * cm, y)
-                if (y - h_table) < footer_limit:
-                    # no cabe, nueva página antes de dibujar
-                    pie_pagina(num_pagina, num_pagina + 1)
-                    num_pagina += 1
-                    c.showPage()
-                    fondo_encabezado()
-                    # redraw title on new page
-                    c.setFont("Helvetica-Bold", 11)
-                    c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-                    # bajar un poco en páginas siguientes
-                    y = h - 100 - (1 * cm)
-                # dibujar tabla
-                w_table, h_table = table.wrapOn(c, w - 4 * cm, y)
-                table.drawOn(c, x_ini, y - h_table)
-                y -= h_table + espacio_entre_secciones
+                w_table, h_table = t.wrapOn(c, w, y)
 
-            # ----------------------------
-            #  SALUD: linea única con comas
-            # ----------------------------
-            elif "SALUD" in nombre_upper:
-                texto = ", ".join([it["peticiones"] for it in cat_items if it["peticiones"]])
-                # estimar líneas que ocupará el párrafo
-                wrapped = wrap(texto, 100)
-                needed_h = len(wrapped) * line_height
-                if (y - needed_h) < footer_limit:
-                    # salto de página antes de imprimir
+                # Salto si no cabe
+                if y - h_table < footer_limit:
                     pie_pagina(num_pagina, num_pagina + 1)
                     num_pagina += 1
                     c.showPage()
                     fondo_encabezado()
                     c.setFont("Helvetica-Bold", 11)
-                    c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-                    y = h - 100 - (1 * cm)
+                    c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+                    y = h - 100
+
+                t.drawOn(c, x_ini, y - h_table)
+                y -= h_table + 20
+                continue
+
+            # ======================================================
+            # =============       SALUD       ======================
+            # ======================================================
+            elif "SALUD" in nombre_upper:
+
+                texto = ", ".join([it["peticiones"] for it in cat_items if it["peticiones"]])
+                wrapped = wrap(texto, 100)
+
+                needed_h = len(wrapped) * line_height + 20
+                if y - needed_h < footer_limit:
+                    pie_pagina(num_pagina, num_pagina+1)
+                    num_pagina += 1
+                    c.showPage()
+                    fondo_encabezado()
+                    c.setFont("Helvetica-Bold", 11)
+                    c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+                    y = h - 100
 
                 c.setFont("Helvetica", 8)
                 for line in wrapped:
                     c.drawString(60, y, line)
                     y -= line_height
-                y -= espacio_entre_secciones
+                y -= 10
+                continue
 
-            # ----------------------------
-            #  ACCION DE GRACIAS: tabla 2 columnas
-            # ----------------------------
+            # ======================================================
+            # =========== ACCIONES DE GRACIAS ==============
+            # ======================================================
             elif "GRACIAS" in nombre_upper:
-                data = [[Paragraph("PETICIONES", header_style), Paragraph("OFRECE", header_style)]]
+
+                data = [[Paragraph("PETICIONES", header_style),
+                         Paragraph("OFRECE", header_style)]]
+
                 for it in cat_items:
                     data.append([
                         Paragraph(it["peticiones"] or "", cell_style),
                         Paragraph(it["ofrece"] or "", cell_style)
                     ])
-                t = Table(data, colWidths=[(w - 100) / 2, (w - 100) / 2])
+
+                t = Table(data, colWidths=[250,250])
                 t.setStyle(TableStyle([
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey)
+                    ('GRID',(0,0),(-1,-1),0.5,colors.black),
+                    ('BACKGROUND',(0,0),(-1,0),colors.lightgrey)
                 ]))
 
-                # medir altura y decidir salto
-                w_t, h_t = t.wrapOn(c, w - 100, y)
-                if (y - h_t) < footer_limit:
-                    pie_pagina(num_pagina, num_pagina + 1)
+                w_table, h_table = t.wrapOn(c, w, y)
+
+                if y - h_table < footer_limit:
+                    pie_pagina(num_pagina, num_pagina+1)
                     num_pagina += 1
                     c.showPage()
                     fondo_encabezado()
                     c.setFont("Helvetica-Bold", 11)
-                    c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-                    y = h - 100 - (1 * cm)
+                    c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+                    y = h - 100
 
-                w_t, h_t = t.wrapOn(c, w - 100, y)
-                t.drawOn(c, 50, y - h_t)
-                y -= h_t + espacio_entre_secciones
+                t.drawOn(c, 50, y - h_table)
+                y -= h_table + 20
+                continue
 
-            # ----------------------------
-            #  OTRAS CATEGORÍAS (incluye INTENCIONES): bullets / items
-            #  Aplicamos la opción C: calculamos cuantas líneas ocupará cada item
-            # ----------------------------
+            # ======================================================
+            # ===========   OTRAS CATEGORÍAS   ====================
+            # ======================================================
             else:
                 c.setFont("Helvetica", 8)
+
                 for it in cat_items:
+
                     texto_item = (it["peticiones"] or "").strip()
-                    if it.get("ofrece"):
-                        # Si hay ofrece lo mostramos después, igual que antes
-                        texto_item_full = f"• {texto_item} — OFRECE: {it['ofrece'] or ''}"
+
+                    # Corrección importante (NO USAR .get)
+                    if it["ofrece"]:
+                        texto_item_full = f"• {texto_item} — OFRECE: {it['ofrece']}"
                     else:
                         texto_item_full = f"• {texto_item}"
 
-                    # calcular cuantas líneas ocupará este item
                     wrapped_item = wrap(texto_item_full, 100)
-                    needed_h = len(wrapped_item) * line_height
+                    needed_h = len(wrapped_item) * line_height + 15
 
-                    # si no cabe entero, saltar antes de imprimir
-                    if (y - needed_h) < footer_limit:
-                        pie_pagina(num_pagina, num_pagina + 1)
+                    # Salto antes de imprimir
+                    if y - needed_h < footer_limit:
+                        pie_pagina(num_pagina, num_pagina+1)
                         num_pagina += 1
                         c.showPage()
                         fondo_encabezado()
                         c.setFont("Helvetica-Bold", 11)
-                        c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-                        y = h - 100 - (1 * cm)
+                        c.drawCentredString(w/2, h-130,
+                                            f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+                        y = h - 100
 
-                    # dibujar las líneas del item
+                    # Dibujar texto
                     for line in wrapped_item:
                         c.drawString(60, y, line)
                         y -= line_height
-                    y -= 5  # espacio entre items
+                    y -= 5
 
-                y -= espacio_entre_secciones
+                y -= 10
 
-            # ----------------------------
-            #  comprobar espacio resto de página y saltar si necesario
-            # ----------------------------
-            if y < footer_limit:
-                pie_pagina(num_pagina, num_pagina + 1)
-                num_pagina += 1
-                c.showPage()
-                fondo_encabezado()
-                c.setFont("Helvetica-Bold", 11)
-                c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-                y = h - 100 - (1 * cm)
+    # ==============================================================
+    # ===============      TEXTO GLOBAL AL FINAL       =============
+    # ==============================================================
 
-    # === TEXTO GLOBAL ===
     if global_text:
         y -= 10
         c.setFont("Helvetica-Bold", 9)
         wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
 
-        # si no cabe el bloque completo, pasar a nueva página antes de imprimir
-        needed_h_global = len(wrapped_lines) * line_height
-        if (y - needed_h_global) < footer_limit:
-            pie_pagina(num_pagina, num_pagina + 1)
+        needed_h = len(wrapped_lines) * 12 + 30
+        if y - needed_h < footer_limit:
+            pie_pagina(num_pagina, num_pagina+1)
             num_pagina += 1
             c.showPage()
             fondo_encabezado()
-            c.setFont("Helvetica-Bold", 11)
-            c.drawCentredString(w / 2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-            y = h - 100 - (1 * cm)
+            y = h - 120
 
         for line in wrapped_lines:
             c.drawCentredString(w / 2, y, line)
-            y -= line_height
+            y -= 12
 
     # === PIE FINAL ===
     pie_pagina(num_pagina, num_pagina)
     c.save()
 
     buffer.seek(0)
-    return send_file(buffer, mimetype="application/pdf", as_attachment=True,
-                     download_name=f"intenciones_{dia}.pdf")
+    return send_file(
+        buffer,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"intenciones_{dia}.pdf"
+    )
 
 # ============================================================
 #  VERIFICA AL DB
