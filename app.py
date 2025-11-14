@@ -898,6 +898,7 @@ def funcionario_print_day():
         c.setFont("Helvetica-Bold", 11)
         c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
         y_loc = h - 160
+        c.setFont("Helvetica", 8)
 
         # función interna para crear nueva página (se usa tanto en conteo como en pase final)
         def make_new_page():
@@ -910,6 +911,7 @@ def funcionario_print_day():
                 c.setFont("Helvetica-Bold", 11)
                 c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
                 y_loc = h - 160
+                c.setFont("Helvetica", 8)
             else:
                 # dibujar pie para la página actual antes de crear nueva
                 pie_pagina_on(c, page_state['current'], total_pages)
@@ -922,6 +924,7 @@ def funcionario_print_day():
                 # bajar un poco a partir de la segunda página si así lo quieres (ya lo tenías)
                 # y mantener separación del titulo/imagen superior
                 y_loc = h - 160
+                c.setFont("Helvetica", 8)
 
         # Recorremos misas
         for misa in misas:
