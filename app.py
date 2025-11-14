@@ -863,7 +863,7 @@ def funcionario_print_day():
         c.drawString(100, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
         c.drawRightString(w - 100, 55, f"Página {num_pagina} de {total_paginas}")
 
-    # === FECHA FORMATEADA ===
+    # === FECHA ===
     dias = {"Monday": "LUNES", "Tuesday": "MARTES", "Wednesday": "MIÉRCOLES",
             "Thursday": "JUEVES", "Friday": "VIERNES", "Saturday": "SÁBADO", "Sunday": "DOMINGO"}
     meses = {"January": "ENERO","February": "FEBRERO","March": "MARZO","April": "ABRIL",
@@ -873,7 +873,7 @@ def funcionario_print_day():
     fecha_dt = datetime.strptime(dia, "%Y-%m-%d")
     fecha_formateada = f"{dias[fecha_dt.strftime('%A')]} {fecha_dt.day} DE {meses[fecha_dt.strftime('%B')]} DE {fecha_dt.year}"
 
-    # === FUNCIÓN SALTO DE PÁGINA ===
+    # === FUNCIÓN NUEVA DE PÁGINA — RESTAURA FORMATO ===
     def new_page():
         nonlocal num_pagina, y
         c.showPage()
@@ -881,6 +881,10 @@ def funcionario_print_day():
         c.setFont("Helvetica-Bold", 11)
         c.drawCentredString(w/2, h-130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
         y = h - 160
+
+        # 🔥 REPARA EL FORMATO QUE SE PERDÍA
+        c.setFont("Helvetica", 8)
+
         num_pagina += 1
 
     # === ENCABEZADO INICIAL ===
@@ -919,7 +923,7 @@ def funcionario_print_day():
         small_style = ParagraphStyle(name="SmallStyle", fontName="Helvetica", fontSize=7, leading=9)
         header_style = ParagraphStyle(name="HeaderStyle", fontName="Helvetica-Bold", fontSize=9, alignment=1, leading=11)
 
-        # === AGRUPAR POR CATEGORÍA ===
+        # === AGRUPAR ===
         categorias = []
         for it in items:
             cat = it["cat_text"] or it["cat"] or "SIN CATEGORÍA"
@@ -938,7 +942,7 @@ def funcionario_print_day():
             c.drawString(50, y, nombre_upper)
             y -= 15
 
-            # ======== DIFUNTOS ========
+            # ===== DIFUNTOS =====
             if "DIFUNT" in cat_real or "DIFUNT" in nombre_upper:
                 data, fila = [], []
                 for it in cat_items:
@@ -967,7 +971,7 @@ def funcionario_print_day():
                 y -= h_table + 20
                 continue
 
-            # ======== SALUD ========
+            # ===== SALUD =====
             elif "SALUD" in nombre_upper:
                 texto = ", ".join([it["peticiones"] for it in cat_items if it["peticiones"]])
                 wrapped = wrap(texto, 100)
@@ -981,7 +985,7 @@ def funcionario_print_day():
                 y -= 10
                 continue
 
-            # ======== GRACIAS ========
+            # ===== ACCIÓN DE GRACIAS =====
             elif "GRACIAS" in nombre_upper:
                 data = [[Paragraph("PETICIONES", header_style),
                          Paragraph("OFRECE", header_style)]]
@@ -1002,26 +1006,37 @@ def funcionario_print_day():
                 y -= h_table + 20
                 continue
 
-            # ======== OTRAS ========
+            # ===== TODAS las demás (incluye INTENCIONES) =====
             else:
+                # 🔥 TAMAÑO Y PESO CORRECTO SIEMPRE
                 c.setFont("Helvetica", 8)
+
                 for it in cat_items:
                     texto_item = (it["peticiones"] or "").strip()
-                    texto_item_full = f"• {texto_item} — OFRECE: {it['ofrece']}" if it["ofrece"] else f"• {texto_item}"
+                    texto_item_full = (
+                        f"• {texto_item} — OFRECE: {it['ofrece']}"
+                        if it["ofrece"] else f"• {texto_item}"
+                    )
+
                     wrapped_item = wrap(texto_item_full, 100)
                     needed_h = len(wrapped_item)*line_height + 15
+
                     if y - needed_h < footer_limit:
                         new_page()
+                        c.setFont("Helvetica", 8)  # <- vuelve al tamaño correcto
+
                     for line in wrapped_item:
                         c.drawString(60, y, line)
                         y -= line_height
+
                     y -= 5
+
                 y -= 10
 
-    # ======== TEXTO GLOBAL FINAL ========
+    # ===== TEXTO GLOBAL FINAL =====
     if global_text:
         y -= 10
-        c.setFont("Helvetica", 9)  # <- Normal, no negrilla
+        c.setFont("Helvetica", 9)
         wrapped_lines = wrap(" ".join(global_text.splitlines()), width=85)
         needed_h = len(wrapped_lines)*12 + 30
         if y - needed_h < footer_limit:
