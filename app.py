@@ -1030,25 +1030,31 @@ def funcionario_print_day():
                         y_loc -= 5
                     y_loc -= 10
 
-        # === TEXTO GLOBAL AL FINAL ===
+        # ===== TEXTO GLOBAL FINAL =====
         if global_text:
-            wrapped_global = wrap(global_text, 100)
-            needed_h = len(wrapped_global)*line_height + 30
-
-            if y_loc - needed_h < footer_limit:
-                make_new_page()
-
-            c.setFont("Helvetica-Bold", 10)
-            c.drawCentredString(w/2, y_loc, "INTENCIONES ESPECIALES")
-            y_loc -= 20
+            y -= 10
             
-            # Texto global centrado y en negrilla
+            # Margen de 2 cm por lado
+            margen_x = 2 * cm
+            ancho_texto = w - (4 * cm)   # 2cm a la izquierda + 2cm a la derecha
+        
+            # Estilo centrado y en negrilla
+            c.setFont("Helvetica-Bold", 10)
+            c.drawCentredString(w/2, y, "INTENCIONES ESPECIALES")
+            y -= 20
+        
             c.setFont("Helvetica-Bold", 9)
-            for line in wrapped_global:
-                c.drawCentredString(w/2, y_loc, line)
-                y_loc -= line_height
-
-            y_loc -= 10
+        
+            # Envolver texto usando el ancho permitido
+            wrapped_lines = wrap(" ".join(global_text.splitlines()), width=int(ancho_texto / 5.5))
+        
+            needed_h = len(wrapped_lines)*12 + 30
+            if y - needed_h < footer_limit:
+                new_page()
+        
+            for line in wrapped_lines:
+                c.drawCentredString(w/2, y, line)
+                y -= 12
 
         return
 
