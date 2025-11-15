@@ -982,6 +982,7 @@ def funcionario_print_day():
                     needed_h = len(wrapped)*line_height + 20
                     if y_loc - needed_h < footer_limit:
                         make_new_page()
+                    c.setFont("Helvetica", 8)
                     for line in wrapped:
                         c.drawString(60, y_loc, line)
                         y_loc -= line_height
@@ -1022,6 +1023,7 @@ def funcionario_print_day():
                         needed_h = len(wrapped_item)*line_height + 15
                         if y_loc - needed_h < footer_limit:
                             make_new_page()
+                        c.setFont("Helvetica", 8)
                         for line in wrapped_item:
                             c.drawString(60, y_loc, line)
                             y_loc -= line_height
@@ -1036,13 +1038,14 @@ def funcionario_print_day():
             if y_loc - needed_h < footer_limit:
                 make_new_page()
 
+            c.setFont("Helvetica-Bold", 10)
+            c.drawCentredString(w/2, y_loc, "INTENCIONES ESPECIALES")
+            y_loc -= 20
+            
+            # Texto global centrado y en negrilla
             c.setFont("Helvetica-Bold", 9)
-            c.drawString(50, y_loc, "INTENCIONES ESPECIALES:")
-            y_loc -= 15
-
-            c.setFont("Helvetica", 8)
             for line in wrapped_global:
-                c.drawString(50, y_loc, line)
+                c.drawCentredString(w/2, y_loc, line)
                 y_loc -= line_height
 
             y_loc -= 10
