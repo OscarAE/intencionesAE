@@ -1043,8 +1043,8 @@ def funcionario_print_day():
             if y_loc - needed_h < footer_limit:
                 make_new_page()
         
-            c.drawCentredString(w/2, y_loc, "INTENCIONES ESPECIALES")
-            y_loc -= 25
+            #c.drawCentredString(w/2, y_loc, "INTENCIONES ESPECIALES")
+            #y_loc -= 25
         
             # Texto global (negrilla, centrado)
             c.setFont("Helvetica-Bold", 9)
