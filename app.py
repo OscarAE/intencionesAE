@@ -879,46 +879,46 @@ def funcionario_print_day():
         c.drawRightString(w - 100, 55, f"Página {num} de {total}")
         c.setFillGray(0)
 
-        # ======= Renderizador general (ambas pasadas) =======
-        def render_content(c, count_only=False, page_state=None, total_pages=None):
-            nonlocal w, h
-        
-            fondo_encabezado_on(c)
-        
-            # TÍTULO SOLO EN LA PRIMERA PÁGINA (2da pasada)
-            if count_only or page_state['current'] == 1:
+    # ======= Renderizador general (ambas pasadas) =======
+    def render_content(c, count_only=False, page_state=None, total_pages=None):
+        nonlocal w, h
+    
+        fondo_encabezado_on(c)
+    
+        # TÍTULO SOLO EN LA PRIMERA PÁGINA (2da pasada)
+        if count_only or page_state['current'] == 1:
+            c.setFont("Helvetica-Bold", 11)
+            c.drawCentredString(w/2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+    
+        y_loc = h - 160
+        c.setFont("Helvetica", 8)
+    
+        def make_new_page():
+            nonlocal y_loc
+    
+            if count_only:
+                c.showPage()
+                fondo_encabezado_on(c)
+                # En la pasada de conteo: SIEMPRE dibujar título (porque solo estamos midiendo)
                 c.setFont("Helvetica-Bold", 11)
                 c.drawCentredString(w/2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-        
-            y_loc = h - 160
-            c.setFont("Helvetica", 8)
-        
-            def make_new_page():
-                nonlocal y_loc
-        
-                if count_only:
-                    c.showPage()
-                    fondo_encabezado_on(c)
-                    # En la pasada de conteo: SIEMPRE dibujar título (porque solo estamos midiendo)
+                y_loc = h - 160
+                c.setFont("Helvetica", 8)
+    
+            else:
+                # Pie de página
+                pie_pagina_on(c, page_state['current'], total_pages)
+                c.showPage()
+                fondo_encabezado_on(c)
+    
+                # SOLO MOSTRAR EN LA PRIMERA PÁGINA REAL
+                if page_state['current'] == 1:
                     c.setFont("Helvetica-Bold", 11)
                     c.drawCentredString(w/2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-                    y_loc = h - 160
-                    c.setFont("Helvetica", 8)
-        
-                else:
-                    # Pie de página
-                    pie_pagina_on(c, page_state['current'], total_pages)
-                    c.showPage()
-                    fondo_encabezado_on(c)
-        
-                    # SOLO MOSTRAR EN LA PRIMERA PÁGINA REAL
-                    if page_state['current'] == 1:
-                        c.setFont("Helvetica-Bold", 11)
-                        c.drawCentredString(w/2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-        
-                    page_state['current'] += 1
-                    y_loc = h - 160
-                    c.setFont("Helvetica", 8)
+    
+                page_state['current'] += 1
+                y_loc = h - 160
+                c.setFont("Helvetica", 8)
 
         # ==== Recorrer misas ====
         for misa in misas:
