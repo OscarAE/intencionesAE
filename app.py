@@ -961,13 +961,13 @@ def funcionario_print_day():
                             data.append(fila)
                             fila = []
                 
-                    # Si la última fila no completó 3 columnas, se llena
+                    # Completar última fila si está incompleta
                     if fila:
                         while len(fila) < 3:
                             fila.append(Paragraph("", small_style))
                         data.append(fila)
                 
-                    # 🔥 FORZAR SIEMPRE 20 FILAS (llenamos con filas vacías)
+                    # 🔥 FORZAR SIEMPRE 20 FILAS llenando con vacías
                     while len(data) < 20:
                         data.append([
                             Paragraph("", small_style),
@@ -979,23 +979,31 @@ def funcionario_print_day():
                     x_ini = 2 * cm
                     col_width = (w - 4 * cm) / 3
                 
-                    t = Table(data, colWidths=[col_width] * 3)
+                    # 🔥 ALTO FIJO PARA TODAS LAS FILAS
+                    row_height = 14   # ajustable
+                
+                    t = Table(
+                        data,
+                        colWidths=[col_width] * 3,
+                        rowHeights=[row_height] * len(data)   # 🔥 aquí se fija
+                    )
+                
                     t.setStyle(TableStyle([
                         ("GRID", (0,0), (-1,-1), 0.25, colors.lightgrey),
                         ("VALIGN", (0,0), (-1,-1), "TOP"),
                     ]))
                 
-                    # Tamaño calculado
+                    # Calcular tamaño
                     w_table, h_table = t.wrapOn(c, w - 4*cm, y_loc)
                 
-                    # Verificar si cabe en la página
+                    # Saltar página si no cabe
                     if y_loc - h_table < footer_limit:
                         make_new_page()
                 
                     # Dibujar
                     t.drawOn(c, x_ini, y_loc - h_table)
-                
                     y_loc -= h_table + 20
+                
                     continue
 
                 # === SALUD ===
