@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, send_file, session, url_for, flash
 import sqlite3, os, io, csv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
