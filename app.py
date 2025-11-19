@@ -865,12 +865,14 @@ def funcionario_print_day():
 
     def pie_pagina_on(c, num, total):
         usuario = session.get("username", "N/A")
-        now = datetime.now()
+        # Ajustamos zona horaria Colombia (UTC-5)
+        now = datetime.utcnow() - timedelta(hours=5)
+    
         dia_imp = dias[now.strftime("%A")]
         mes_imp = meses[now.strftime("%B")]
         hora_imp = now.strftime("%I:%M %p").upper()
         fecha_imp = f"{dia_imp} {now.day} DE {mes_imp} DE {now.year} A LAS {hora_imp}"
-
+    
         c.setFont("Helvetica", 8)
         c.setFillGray(0.3)
         c.drawString(100, 55, f"IMPRESO POR: {usuario} — {fecha_imp}")
