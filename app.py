@@ -950,30 +950,51 @@ def funcionario_print_day():
 
                 # === DIFUNTOS ===
                 if "DIFUNT" in cat_real or "DIFUNT" in nombre_upper:
-                    data, fila = [], []
+                
+                    # Construir filas de la tabla 3 columnas
+                    data = []
+                    fila = []
+                
                     for it in cat_items:
                         fila.append(Paragraph(it["peticiones"] or "", small_style))
                         if len(fila) == 3:
                             data.append(fila)
                             fila = []
+                
+                    # Si la última fila no completó 3 columnas, se llena
                     if fila:
                         while len(fila) < 3:
                             fila.append(Paragraph("", small_style))
                         data.append(fila)
-
-                    x_ini = 2*cm
-                    col_width = (w - 4*cm)/3
-                    t = Table(data, colWidths=[col_width]*3)
+                
+                    # 🔥 FORZAR SIEMPRE 20 FILAS (llenamos con filas vacías)
+                    while len(data) < 20:
+                        data.append([
+                            Paragraph("", small_style),
+                            Paragraph("", small_style),
+                            Paragraph("", small_style)
+                        ])
+                
+                    # Medidas
+                    x_ini = 2 * cm
+                    col_width = (w - 4 * cm) / 3
+                
+                    t = Table(data, colWidths=[col_width] * 3)
                     t.setStyle(TableStyle([
-                        ('GRID',(0,0),(-1,-1),0.25,colors.lightgrey),
-                        ('VALIGN',(0,0),(-1,-1),'TOP'),
+                        ("GRID", (0,0), (-1,-1), 0.25, colors.lightgrey),
+                        ("VALIGN", (0,0), (-1,-1), "TOP"),
                     ]))
+                
+                    # Tamaño calculado
                     w_table, h_table = t.wrapOn(c, w - 4*cm, y_loc)
-
+                
+                    # Verificar si cabe en la página
                     if y_loc - h_table < footer_limit:
                         make_new_page()
-
+                
+                    # Dibujar
                     t.drawOn(c, x_ini, y_loc - h_table)
+                
                     y_loc -= h_table + 20
                     continue
 
