@@ -894,33 +894,33 @@ def funcionario_print_day():
         c.setFont("Helvetica", 8)
     
         def make_new_page():
-        nonlocal y_loc
-    
-        if count_only:
-            c.showPage()
-            fondo_encabezado_on(c)
-            c.setFont("Helvetica-Bold", 11)
-            c.drawCentredString(w/2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-            y_loc = h - 160
-            c.setFont("Helvetica", 8)
-    
-        else:
-            # Pie de página antes de pasar
-            pie_pagina_on(c, page_state['current'], total_pages)
-            c.showPage()
-    
-            # 🔥 IMPORTANTE: incrementar antes de dibujar
-            page_state['current'] += 1
-    
-            fondo_encabezado_on(c)
-    
-            # 🔥 SOLO página 1
-            if page_state['current'] == 1:
+            nonlocal y_loc
+        
+            if count_only:
+                c.showPage()
+                fondo_encabezado_on(c)
                 c.setFont("Helvetica-Bold", 11)
                 c.drawCentredString(w/2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
-    
-            y_loc = h - 160
-            c.setFont("Helvetica", 8)
+                y_loc = h - 160
+                c.setFont("Helvetica", 8)
+        
+            else:
+                # Pie de página antes de pasar
+                pie_pagina_on(c, page_state['current'], total_pages)
+                c.showPage()
+        
+                # 🔥 IMPORTANTE: incrementar antes de dibujar
+                page_state['current'] += 1
+        
+                fondo_encabezado_on(c)
+        
+                # 🔥 SOLO página 1
+                if page_state['current'] == 1:
+                    c.setFont("Helvetica-Bold", 11)
+                    c.drawCentredString(w/2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
+        
+                y_loc = h - 160
+                c.setFont("Helvetica", 8)
 
         # ==== Recorrer misas ====
         for misa in misas:
