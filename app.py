@@ -884,9 +884,9 @@ def funcionario_print_day():
         nonlocal w, h
     
         fondo_encabezado_on(c)
-    
-        # TÍTULO SOLO EN LA PRIMERA PÁGINA (2da pasada)
-        if count_only or page_state['current'] == 1:
+
+        # 🔥 TÍTULO SOLO EN LA PRIMERA PÁGINA REAL
+        if count_only or (not count_only and page_state['current'] == 1 and c.getPageNumber() == 1):
             c.setFont("Helvetica-Bold", 11)
             c.drawCentredString(w/2, h - 130, f"INTENCIONES PARA LA SANTA MISA — {fecha_formateada}")
     
