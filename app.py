@@ -1184,9 +1184,9 @@ def admin_seed():
         ("DIFUNTOS", "DIFUNTOS", "POR EL ALIVIO Y ETERNO DESCANSO DE:", 1),
         ("VARIOS", "VARIOS", "VARIOS", 4),
         ("INTENCIONES", "INTENCIONES", "INTENCIONES Y NECESIDADES PERSONALES DE:", 5),
-        ("INTENCIONES", "PROSPERIDAD", "POR LA PROSPERIDAD DE:", 6),
-        ("INTENCIONES", "CUMPLEAÑOS", "POR EL CUMPLEAÑOS DE:", 7),
-        ("INTENCIONES", "TRABAJO", "POR EL TRABAJO DE:", 5),
+        ("PROSPERIDAD", "PROSPERIDAD", "POR LA PROSPERIDAD DE:", 6),
+        ("CUMPLEAÑOS", "CUMPLEAÑOS", "POR EL CUMPLEAÑOS DE:", 7),
+        ("TRABAJO", "TRABAJO", "POR EL TRABAJO DE:", 5),
     ]
     cur.executemany("""
         INSERT INTO categorias (nombre, descripcion, texto_adicional, orden, active)
