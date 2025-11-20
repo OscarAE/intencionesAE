@@ -26,13 +26,13 @@
     </div>
     <div class="mb-2 row">
       <div class="col">
-        <label id="ofrece_label">Ofrece (nombre)</label>
+        <label>Categoría</label>
         <select class="form-select" name="categoria_id" required>
           {% for c in categorias %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}
         </select>
       </div>
       <div class="col">
-        <label>Ofrece (nombre)</label>
+        <label id="ofrece_label">Ofrece (nombre)</label>
         <input class="form-control" name="ofrece" oninput="soloMayusculasComasPuntos(this)" required>
       </div>
     </div>
