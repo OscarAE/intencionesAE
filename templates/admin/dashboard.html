@@ -246,7 +246,6 @@
 <table class="table table-striped">
     <tr>
         <th>Nombre</th>
-        <th>Descripción</th>
         <th>Texto adicional</th>
         <th>Orden</th>
         <th>Acciones</th>
@@ -254,7 +253,6 @@
     {% for c in categorias %}
     <tr>
         <td>{{ c.nombre }}</td>
-        <td>{{ c.descripcion }}</td>
         <td>{{ c.texto_adicional }}</td>
         <td>{{ c.orden }}</td>
         <td>
@@ -272,10 +270,6 @@
     <div class="col-md-6">
         <label>Nombre</label>
         <input name="nombre" class="form-control" oninput="soloMayusculasComasPuntos(this)" required>
-    </div>
-    <div class="col-md-6">
-        <label>Descripción</label>
-        <input name="descripcion" class="form-control" oninput="soloMayusculasComasPuntos(this)">
     </div>
     <div class="col-md-6">
         <label>Orden de aparición</label>
