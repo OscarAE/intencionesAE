@@ -26,7 +26,7 @@
     </div>
     <div class="mb-2 row">
       <div class="col">
-        <label>Categoría</label>
+        <label id="ofrece_label">Ofrece (nombre)</label>
         <select class="form-select" name="categoria_id" required>
           {% for c in categorias %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}
         </select>
@@ -88,4 +88,56 @@
     <div class="col"><button class="btn btn-outline-success">Generar PDF</button></div>
   </form>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const categoriaSelect = document.querySelector("select[name='categoria_id']");
+    const labelOfrece = document.querySelector("label[for='ofrece_label']") || document.querySelector("div.col label:nth-child(1)");
+    const ofreceInput = document.querySelector("input[name='ofrece']");
+    
+    const divIntBase = document.querySelector("select[name='int_base_id']").closest(".mb-2");
+    const divPeticiones = document.querySelector("textarea[name='peticiones']").closest(".mb-2");
+
+    const intBaseSelect = document.querySelector("select[name='int_base_id']");
+    const peticionesTextarea = document.querySelector("textarea[name='peticiones']");
+
+    function actualizarFormulario() {
+        let selectedText = categoriaSelect.options[categoriaSelect.selectedIndex].text.toUpperCase();
+
+        if (selectedText.includes("DIFUN")) {
+            // Cambiar label
+            labelOfrece.textContent = "Por el alma y eterno descanso de:";
+
+            // Ocultar campos
+            divIntBase.style.display = "none";
+            divPeticiones.style.display = "none";
+
+            // Vaciar valores (para que la BD reciba vacío)
+            intBaseSelect.value = "";
+            peticionesTextarea.value = "";
+
+            // No requeridos
+            intBaseSelect.removeAttribute("required");
+            peticionesTextarea.removeAttribute("required");
+
+        } else {
+            // Restaurar label
+            labelOfrece.textContent = "Ofrece (nombre)";
+
+            // Mostrar campos
+            divIntBase.style.display = "block";
+            divPeticiones.style.display = "block";
+
+            // Requeridos nuevamente
+            intBaseSelect.setAttribute("required", "required");
+            peticionesTextarea.setAttribute("required", "required");
+        }
+    }
+
+    // Inicial al cargar
+    actualizarFormulario();
+
+    // Cuando cambie la categoría
+    categoriaSelect.addEventListener("change", actualizarFormulario);
+});
+</script>
 {% endblock %}
