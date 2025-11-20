@@ -34,7 +34,6 @@ def init_db():
     CREATE TABLE IF NOT EXISTS categorias (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT UNIQUE,
-        descripcion TEXT,
         texto_adicional TEXT,
         active INTEGER DEFAULT 1,
         orden INTEGER DEFAULT 0
@@ -362,15 +361,14 @@ def admin_delete_misa(misa_id):
 @login_required(role="admin")
 def admin_create_categoria():
     nombre = request.form["nombre"]
-    descripcion = request.form.get("descripcion", "")
     texto_adicional = request.form.get("texto_adicional", "")
     orden = request.form.get("orden", 0)  # 🆕 Campo nuevo
 
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO categorias(nombre, descripcion, texto_adicional, orden, active) VALUES (?,?,?,?,1)",
-        (nombre, descripcion, texto_adicional, orden)
+        "INSERT INTO categorias(nombre, texto_adicional, orden, active) VALUES (?,?,?,?,1)",
+        (nombre, texto_adicional, orden)
     )
     conn.commit()
     conn.close()
@@ -383,15 +381,14 @@ def admin_create_categoria():
 @login_required(role="admin")
 def admin_edit_categoria(cat_id):
     nombre = request.form["nombre"]
-    descripcion = request.form.get("descripcion", "")
     texto_adicional = request.form.get("texto_adicional", "")
     orden = request.form.get("orden", 0)  # 🆕 Campo nuevo
 
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "UPDATE categorias SET nombre=?, descripcion=?, texto_adicional=?, orden=? WHERE id=?",
-        (nombre, descripcion, texto_adicional, orden, cat_id)
+        "UPDATE categorias SET nombre=?, texto_adicional=?, orden=? WHERE id=?",
+        (nombre, texto_adicional, orden, cat_id)
     )
     conn.commit()
     conn.close()
@@ -1179,18 +1176,18 @@ def admin_seed():
 
     # === 2️⃣ Crear categorías ===
     categorias = [
-        ("ACCION DE GRACIAS", "ACCION DE GRACIAS", "EN ACCION DE GRACIAS POR:", 3),
-        ("SALUD", "SALUD", "POR LA SALUD DE:", 2),
-        ("DIFUNTOS", "DIFUNTOS", "POR EL ALIVIO Y ETERNO DESCANSO DE:", 1),
-        ("VARIOS", "VARIOS", "VARIOS", 4),
-        ("INTENCIONES", "INTENCIONES", "INTENCIONES Y NECESIDADES PERSONALES DE:", 5),
-        ("PROSPERIDAD", "PROSPERIDAD", "POR LA PROSPERIDAD DE:", 6),
-        ("CUMPLEAÑOS", "CUMPLEAÑOS", "POR EL CUMPLEAÑOS DE:", 7),
-        ("TRABAJO", "TRABAJO", "POR EL TRABAJO DE:", 5),
+        ("ACCION DE GRACIAS", "EN ACCION DE GRACIAS POR:", 3),
+        ("SALUD", "POR LA SALUD DE:", 2),
+        ("DIFUNTOS", "POR EL ALIVIO Y ETERNO DESCANSO DE:", 1),
+        ("VARIOS", "VARIOS", 4),
+        ("INTENCIONES", "INTENCIONES Y NECESIDADES PERSONALES DE:", 5),
+        ("PROSPERIDAD", "POR LA PROSPERIDAD DE:", 6),
+        ("CUMPLEAÑOS", "POR EL CUMPLEAÑOS DE:", 7),
+        ("TRABAJO", "POR EL TRABAJO DE:", 5),
     ]
     cur.executemany("""
-        INSERT INTO categorias (nombre, descripcion, texto_adicional, orden, active)
-        VALUES (?, ?, ?, ?, 1)
+        INSERT INTO categorias (nombre, texto_adicional, orden, active)
+        VALUES (?, ?, ?, 1)
     """, categorias)
 
     cur.execute("SELECT id, nombre FROM categorias")
