@@ -168,7 +168,7 @@ def admin():
     misas = cur.fetchall()
 
     # Categorías
-    cur.execute("SELECT * FROM categorias ORDER BY nombre")
+    cur.execute("SELECT * FROM categorias ORDER BY orden")
     categorias = cur.fetchall()
 
     # Frases base
@@ -606,7 +606,7 @@ def funcionario():
     misas = cur.fetchall()
 
     # Categorías activas
-    cur.execute("SELECT * FROM categorias WHERE active=1 ORDER BY nombre")
+    cur.execute("SELECT * FROM categorias WHERE active=1 ORDER BY orden")
     categorias = cur.fetchall()
 
     # Intenciones base activas
