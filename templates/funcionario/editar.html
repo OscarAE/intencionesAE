@@ -34,9 +34,7 @@
   <!-- PETICIONES -->
   <div class="mb-2" id="peticiones_group">
     <label>Peticiones (máx 250)</label>
-    <textarea class="form-control" name="peticiones" maxlength="250" id="peticiones_txt">
-      {{ row.peticiones }}
-    </textarea>
+    <textarea class="form-control" name="peticiones" maxlength="250" oninput="soloMayusculasComasPuntos(this)">{{ row.peticiones }}</textarea>
   </div>
 
   <button class="btn btn-primary">Guardar cambios</button>
