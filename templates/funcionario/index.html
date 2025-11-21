@@ -103,50 +103,55 @@ document.addEventListener("DOMContentLoaded", function () {
     const peticionesTextarea = document.querySelector("textarea[name='peticiones']");
 
     function actualizarFormulario() {
-        let textoCategoria = categoriaSelect.options[categoriaSelect.selectedIndex].text.toUpperCase();
+        let texto = categoriaSelect.options[categoriaSelect.selectedIndex].text.toUpperCase();
 
-        // =======================
-        // CATEGORÍA: DIFUNTOS
-        // =======================
-        if (textoCategoria.includes("DIFUN")) {
+        const esDifuntos = texto.includes("DIFUN");
+        const esSalud = texto.includes("SALUD");
 
+        if (esDifuntos) {
+
+            // Cambiar label
             labelOfrece.textContent = "Por el alma y eterno descanso de:";
 
+            // Ocultar
             divIntBase.style.display = "none";
             divPeticiones.style.display = "none";
 
+            // Vaciar campos
             intBaseSelect.value = "";
             peticionesTextarea.value = "";
 
+            // Quitar required
             intBaseSelect.removeAttribute("required");
             peticionesTextarea.removeAttribute("required");
 
-        // =======================
-        // CATEGORÍA: SALUD
-        // =======================
-        } else if (textoCategoria.includes("SALUD")) {
+        } else if (esSalud) {
 
+            // Cambiar label SOLO PARA SALUD
             labelOfrece.textContent = "Por la salud física y espiritual de:";
 
+            // Ocultar los mismos campos que en difuntos
             divIntBase.style.display = "none";
             divPeticiones.style.display = "none";
 
+            // Vaciar campos
             intBaseSelect.value = "";
             peticionesTextarea.value = "";
 
+            // Quitar required
             intBaseSelect.removeAttribute("required");
             peticionesTextarea.removeAttribute("required");
 
-        // =======================
-        // OTRAS CATEGORÍAS
-        // =======================
         } else {
 
+            // Restaurar label normal
             labelOfrece.textContent = "Ofrece (nombre)";
 
+            // Mostrar campos
             divIntBase.style.display = "block";
             divPeticiones.style.display = "block";
 
+            // Restaurar required
             intBaseSelect.setAttribute("required", "required");
             peticionesTextarea.setAttribute("required", "required");
         }
