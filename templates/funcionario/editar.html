@@ -15,8 +15,9 @@
 
   <!-- CAMPO OFRECE -->
   <div class="mb-2">
-    <label id="label_ofrece">Ofrece</label>
-    <input class="form-control" name="ofrece" value="{{ row.ofrece }}" oninput="soloMayusculasComasPuntos(this)" required>
+    <label id="label_ofrece">Ofrece (nombre)</label>
+    <input class="form-control" name="ofrece" value="{{ row.ofrece }}" 
+           oninput="soloMayusculasComasPuntos(this)" required>
   </div>
 
   <!-- INTENCION BASE -->
@@ -34,36 +35,34 @@
   <!-- PETICIONES -->
   <div class="mb-2" id="peticiones_group">
     <label>Peticiones (máx 250)</label>
-    <textarea class="form-control" name="peticiones" maxlength="250" oninput="soloMayusculasComasPuntos(this)">{{ row.peticiones }}</textarea>
+    <textarea class="form-control" name="peticiones" maxlength="250" 
+              oninput="soloMayusculasComasPuntos(this)">{{ row.peticiones }}</textarea>
   </div>
 
   <button class="btn btn-primary">Guardar cambios</button>
   <a class="btn btn-secondary" href="/funcionario">Volver</a>
 </form>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    const categoriaSelect = document.querySelector("select[name='categoria_id']");
-    const labelOfrece = document.querySelector("label[for='input_ofrece']") 
-                         || document.querySelector("label:contains('Ofrece')") 
-                         || document.querySelectorAll("label")[1];
+    const categoriaSelect = document.getElementById("categoria_sel");
+    const labelOfrece = document.getElementById("label_ofrece");
 
-    const divIntBase = document.querySelector("select[name='int_base_id']").closest(".mb-2");
-    const divPeticiones = document.querySelector("textarea[name='peticiones']").closest(".mb-2");
+    const divIntBase = document.getElementById("int_base_group");
+    const divPeticiones = document.getElementById("peticiones_group");
 
-    const intBaseSelect = document.querySelector("select[name='int_base_id']");
+    const intBaseSelect = document.getElementById("int_base_sel");
     const peticionesTextarea = document.querySelector("textarea[name='peticiones']");
 
     function actualizarFormulario() {
-        if (!categoriaSelect) return;
 
         let textoCategoria = categoriaSelect.options[categoriaSelect.selectedIndex].text.toUpperCase();
 
-        // ========= DIFUNTOS =========
+        // ===== DIFUNTOS =====
         if (textoCategoria.includes("DIFUN")) {
 
             labelOfrece.textContent = "Por el alma y eterno descanso de:";
-
             divIntBase.style.display = "none";
             divPeticiones.style.display = "none";
 
@@ -72,28 +71,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
             intBaseSelect.removeAttribute("required");
             peticionesTextarea.removeAttribute("required");
+            return;
+        }
 
-        // ========= SALUD =========
-        } else if (textoCategoria.includes("SALUD")) {
+        // ===== SALUD =====
+        if (textoCategoria.includes("SALUD")) {
 
             labelOfrece.textContent = "Por la salud física y espiritual de:";
+            divIntBase.style.display = "none";
+            divPeticiones.style.display = "none";
 
-            divIntBase.style.display = "block";
-            divPeticiones.style.display = "block";
+            intBaseSelect.value = "";
+            peticionesTextarea.value = "";
 
-            intBaseSelect.setAttribute("required", "required");
-            peticionesTextarea.setAttribute("required", "required");
-
-        // ========= OTRAS =========
-        } else {
-            labelOfrece.textContent = "Ofrece";
-
-            divIntBase.style.display = "block";
-            divPeticiones.style.display = "block";
-
-            intBaseSelect.setAttribute("required", "required");
-            peticionesTextarea.setAttribute("required", "required");
+            intBaseSelect.removeAttribute("required");
+            peticionesTextarea.removeAttribute("required");
+            return;
         }
+
+        // ===== OTRAS CATEGORÍAS =====
+        labelOfrece.textContent = "Ofrece (nombre)";
+        divIntBase.style.display = "block";
+        divPeticiones.style.display = "block";
+
+        intBaseSelect.setAttribute("required", "required");
+        peticionesTextarea.setAttribute("required", "required");
     }
 
     actualizarFormulario();
