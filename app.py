@@ -731,19 +731,24 @@ def funcionario_editar(int_id):
             return redirect("/funcionario")
 
         ofrece = request.form["ofrece"].strip()[:200]
-        peticiones = request.form["peticiones"].strip()[:250]
         categoria_id = int(request.form["categoria_id"])
 
-        # === NUEVO: detectar si es DIFUNTOS ===
+        # Detectar categoría
         cur.execute("SELECT nombre FROM categorias WHERE id=?", (categoria_id,))
         cat = cur.fetchone()
-        es_difuntos = "DIFUN" in cat["nombre"].upper()
+        cat_text = cat["nombre"].upper()
 
-        if es_difuntos:
+        es_difuntos = "DIFUN" in cat_text
+        es_salud = "SALUD" in cat_text
+
+        # === DIFUNTOS y SALUD → enviar NULL y cadena vacía ===
+        if es_difuntos or es_salud:
             int_base_id = None
             peticiones = ""
         else:
-            # solo si NO es difuntos hacemos int()
+            # OTRAS categorías → usar valores normales
+            peticiones = request.form["peticiones"].strip()[:250]
+
             int_base_raw = request.form.get("int_base_id", "").strip()
             int_base_id = int(int_base_raw) if int_base_raw else None
 
@@ -752,8 +757,14 @@ def funcionario_editar(int_id):
             SET ofrece=?, peticiones=?, categoria_id=?, intencion_base_id=?,
                 fecha_actualizado=?
             WHERE id=?
-        """, (ofrece, peticiones, categoria_id, int_base_id,
-              datetime.now().isoformat(), int_id))
+        """, (
+            ofrece, 
+            peticiones, 
+            categoria_id, 
+            int_base_id,
+            datetime.now().isoformat(),
+            int_id
+        ))
 
         conn.commit()
         conn.close()
