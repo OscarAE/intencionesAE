@@ -4,25 +4,77 @@
 <form method="post">
   <div class="mb-2">
     <label>Categoría</label>
-    <select class="form-select" name="categoria_id">
-      {% for c in categorias %}<option value="{{ c.id }}" {% if c.id==row.categoria_id %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
+    <select class="form-select" name="categoria_id" id="categoria_sel">
+      {% for c in categorias %}
+        <option value="{{ c.id }}" {% if c.id==row.categoria_id %}selected{% endif %}>
+          {{ c.nombre }}
+        </option>
+      {% endfor %}
     </select>
   </div>
+
+  <!-- CAMPO OFRECE -->
   <div class="mb-2">
-    <label>Ofrece</label>
+    <label id="label_ofrece">Ofrece</label>
     <input class="form-control" name="ofrece" value="{{ row.ofrece }}">
   </div>
-  <div class="mb-2">
+
+  <!-- INTENCION BASE -->
+  <div class="mb-2" id="int_base_group">
     <label>Intención base</label>
-    <select class="form-select" name="int_base_id">
-      {% for b in int_b %}<option value="{{ b.id }}" {% if b.id==row.intencion_base_id %}selected{% endif %}>{{ b.frase }}</option>{% endfor %}
+    <select class="form-select" name="int_base_id" id="int_base_sel">
+      {% for b in int_b %}
+      <option value="{{ b.id }}" {% if b.id==row.intencion_base_id %}selected{% endif %}>
+        {{ b.frase }}
+      </option>
+      {% endfor %}
     </select>
   </div>
-  <div class="mb-2">
+
+  <!-- PETICIONES -->
+  <div class="mb-2" id="peticiones_group">
     <label>Peticiones (máx 250)</label>
-    <textarea class="form-control" name="peticiones" maxlength="250">{{ row.peticiones }}</textarea>
+    <textarea class="form-control" name="peticiones" maxlength="250" id="peticiones_txt">
+      {{ row.peticiones }}
+    </textarea>
   </div>
+
   <button class="btn btn-primary">Guardar cambios</button>
   <a class="btn btn-secondary" href="/funcionario">Volver</a>
 </form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const selCat = document.getElementById("categoria_sel");
+    const labelOfrece = document.getElementById("label_ofrece");
+    const intBaseGroup = document.getElementById("int_base_group");
+    const petGroup = document.getElementById("peticiones_group");
+    const intBaseSel = document.getElementById("int_base_sel");
+    const petTxt = document.getElementById("peticiones_txt");
+
+    function actualizarCampos() {
+        let texto = selCat.options[selCat.selectedIndex].text.toUpperCase();
+
+        if (texto.includes("DIFUNT")) {
+            labelOfrece.textContent = "Por el alma y eterno descanso de:";
+            intBaseGroup.style.display = "none";
+            petGroup.style.display = "none";
+
+            // vaciar campos ocultos
+            intBaseSel.value = "";
+            petTxt.value = "";
+        } else {
+            labelOfrece.textContent = "Ofrece";
+            intBaseGroup.style.display = "block";
+            petGroup.style.display = "block";
+        }
+    }
+
+    selCat.addEventListener("change", actualizarCampos);
+
+    // ejecutar al cargar la página (por si ya es DIFUNTOS)
+    actualizarCampos();
+});
+</script>
+
 {% endblock %}
