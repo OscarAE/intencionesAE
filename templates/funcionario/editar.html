@@ -16,7 +16,7 @@
   <!-- CAMPO OFRECE -->
   <div class="mb-2">
     <label id="label_ofrece">Ofrece</label>
-    <input class="form-control" name="ofrece" value="{{ row.ofrece }}">
+    <input class="form-control" name="ofrece" value="{{ row.ofrece }}" oninput="soloMayusculasComasPuntos(this)" required>
   </div>
 
   <!-- INTENCION BASE -->
