@@ -91,7 +91,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const categoriaSelect = document.querySelector("select[name='categoria_id']");
-    const labelOfrece = document.querySelector("label[for='ofrece_label']");
+    const labelOfrece = document.querySelector("label[for='ofrece_label']") || document.querySelector("div.col label:nth-child(1)");
     const ofreceInput = document.querySelector("input[name='ofrece']");
     
     const divIntBase = document.querySelector("select[name='int_base_id']").closest(".mb-2");
