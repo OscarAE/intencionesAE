@@ -720,6 +720,7 @@ def funcionario_registrar():
 def funcionario_editar(int_id):
     conn = get_db(); cur = conn.cursor()
 
+    # === Cargar intención a editar ===
     cur.execute("""
         SELECT i.*, m.fecha as misa_fecha, m.hora as misa_hora
         FROM intenciones i
@@ -732,12 +733,18 @@ def funcionario_editar(int_id):
         conn.close()
         return "No autorizado", 403
 
+    # Fecha y hora de la misa
     misa_dt = datetime.combine(
         datetime.strptime(row["misa_fecha"], "%Y-%m-%d").date(),
         datetime.strptime(row["misa_hora"], "%H:%M").time()
     )
 
+    # ============================================================
+    #                      PROCESO POST
+    # ============================================================
     if request.method == "POST":
+
+        # No permitir editar si ya pasó
         if datetime.now() > misa_dt:
             flash("❌ La misa ya pasó, no se puede editar.")
             conn.close()
@@ -746,34 +753,50 @@ def funcionario_editar(int_id):
         ofrece = request.form["ofrece"].strip()[:200]
         categoria_id = int(request.form["categoria_id"])
 
-        # Detectar categoría
+        # Obtener texto real de la categoría
         cur.execute("SELECT nombre FROM categorias WHERE id=?", (categoria_id,))
         cat = cur.fetchone()
-        cat_text = cat["nombre"].upper()
+        cat_text = cat["nombre"].upper() if cat else ""
 
         es_difuntos = "DIFUN" in cat_text
         es_salud = "SALUD" in cat_text
 
-        # === DIFUNTOS y SALUD → enviar NULL y cadena vacía ===
+        # ========================================================
+        # DIFUNTOS / SALUD => sin intencion base ni peticiones
+        # ========================================================
         if es_difuntos or es_salud:
             int_base_id = None
             peticiones = ""
+
         else:
-            # OTRAS categorías → usar valores normales
-            peticiones = request.form["peticiones"].strip()[:250]
+            # ====================================================
+            # OTRAS CATEGORÍAS => deben tomar valores reales
+            # ====================================================
+            peticiones = request.form.get("peticiones", "").strip()[:250]
 
             int_base_raw = request.form.get("int_base_id", "").strip()
-            int_base_id = int(int_base_raw) if int_base_raw else None
+            if int_base_raw == "":
+                flash("Debe seleccionar la intención base.")
+                conn.close()
+                return redirect(f"/funcionario/editar/{int_id}")
 
+            int_base_id = int(int_base_raw)
+
+        # ====================================================
+        # Actualizar intención
+        # ====================================================
         cur.execute("""
             UPDATE intenciones
-            SET ofrece=?, peticiones=?, categoria_id=?, intencion_base_id=?,
+            SET ofrece=?, 
+                peticiones=?, 
+                categoria_id=?, 
+                intencion_base_id=?,
                 fecha_actualizado=?
             WHERE id=?
         """, (
             ofrece, 
-            peticiones, 
-            categoria_id, 
+            peticiones,
+            categoria_id,
             int_base_id,
             datetime.now().isoformat(),
             int_id
@@ -781,10 +804,13 @@ def funcionario_editar(int_id):
 
         conn.commit()
         conn.close()
+
         flash("✅ Cambios guardados.")
         return redirect("/funcionario")
 
-    # cargar combos
+    # ============================================================
+    #                     PROCESO GET (cargar página)
+    # ============================================================
     cur.execute("SELECT * FROM categorias WHERE active=1 ORDER BY nombre")
     categorias = cur.fetchall()
 
