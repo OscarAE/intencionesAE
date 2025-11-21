@@ -128,11 +128,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             labelOfrece.textContent = "Por la salud física y espiritual de:";
 
-            divIntBase.style.display = "block";
-            divPeticiones.style.display = "block";
+            divIntBase.style.display = "none";
+            divPeticiones.style.display = "none";
 
-            intBaseSelect.setAttribute("required", "required");
-            peticionesTextarea.setAttribute("required", "required");
+            intBaseSelect.value = "";
+            peticionesTextarea.value = "";
+
+            intBaseSelect.removeAttribute("required");
+            peticionesTextarea.removeAttribute("required");
 
         // =======================
         // OTRAS CATEGORÍAS
