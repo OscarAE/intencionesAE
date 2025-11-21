@@ -32,7 +32,7 @@
         </select>
       </div>
       <div class="col">
-        <label id="ofrece_label">Ofrece (nombre)</label>
+        <label id="label_ofrece">Ofrece (nombre)</label>
         <input class="form-control" name="ofrece" oninput="soloMayusculasComasPuntos(this)" required>
       </div>
     </div>
@@ -91,9 +91,8 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const categoriaSelect = document.querySelector("select[name='categoria_id']");
-    const labelOfrece = document.querySelector("label[for='ofrece_label']") || document.querySelector("div.col label:nth-child(1)");
-    const ofreceInput = document.querySelector("input[name='ofrece']");
-    
+    const labelOfrece = document.getElementById("label_ofrece");
+
     const divIntBase = document.querySelector("select[name='int_base_id']").closest(".mb-2");
     const divPeticiones = document.querySelector("textarea[name='peticiones']").closest(".mb-2");
 
@@ -101,42 +100,41 @@ document.addEventListener("DOMContentLoaded", function () {
     const peticionesTextarea = document.querySelector("textarea[name='peticiones']");
 
     function actualizarFormulario() {
-        let selectedText = categoriaSelect.options[categoriaSelect.selectedIndex].text.toUpperCase();
+        let textoCategoria = categoriaSelect.options[categoriaSelect.selectedIndex].text.toUpperCase();
 
-        if (selectedText.includes("DIFUN")) {
-            // Cambiar label
+        if (textoCategoria.includes("DIFUN")) {
+
+            // Cambiar SOLO este label
             labelOfrece.textContent = "Por el alma y eterno descanso de:";
 
             // Ocultar campos
             divIntBase.style.display = "none";
             divPeticiones.style.display = "none";
 
-            // Vaciar valores (para que la BD reciba vacío)
+            // Vaciar datos
             intBaseSelect.value = "";
             peticionesTextarea.value = "";
 
-            // No requeridos
+            // Quitar required
             intBaseSelect.removeAttribute("required");
             peticionesTextarea.removeAttribute("required");
 
         } else {
-            // Restaurar label
+
+            // Restaurar label normal
             labelOfrece.textContent = "Ofrece (nombre)";
 
             // Mostrar campos
             divIntBase.style.display = "block";
             divPeticiones.style.display = "block";
 
-            // Requeridos nuevamente
+            // Restaurar required
             intBaseSelect.setAttribute("required", "required");
             peticionesTextarea.setAttribute("required", "required");
         }
     }
 
-    // Inicial al cargar
     actualizarFormulario();
-
-    // Cuando cambie la categoría
     categoriaSelect.addEventListener("change", actualizarFormulario);
 });
 </script>
