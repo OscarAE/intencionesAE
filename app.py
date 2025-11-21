@@ -724,16 +724,27 @@ def funcionario_editar(int_id):
     )
 
     if request.method == "POST":
-        # no permitir editar después de la misa
         if datetime.now() > misa_dt:
             flash("❌ La misa ya pasó, no se puede editar.")
             conn.close()
             return redirect("/funcionario")
 
-        ofrece = request.form["ofrece"][:200]
-        peticiones = request.form["peticiones"][:250]
+        ofrece = request.form["ofrece"].strip()[:200]
+        peticiones = request.form["peticiones"].strip()[:250]
         categoria_id = int(request.form["categoria_id"])
-        int_base_id = int(request.form["int_base_id"])
+
+        # === NUEVO: detectar si es DIFUNTOS ===
+        cur.execute("SELECT nombre FROM categorias WHERE id=?", (categoria_id,))
+        cat = cur.fetchone()
+        es_difuntos = "DIFUN" in cat["nombre"].upper()
+
+        if es_difuntos:
+            int_base_id = None
+            peticiones = ""
+        else:
+            # solo si NO es difuntos hacemos int()
+            int_base_raw = request.form.get("int_base_id", "").strip()
+            int_base_id = int(int_base_raw) if int_base_raw else None
 
         cur.execute("""
             UPDATE intenciones
