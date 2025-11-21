@@ -39,7 +39,10 @@
     <div class="mb-2">
       <label>Intención ofrecida a</label>
       <select class="form-select" name="int_base_id" required>
-        {% for b in int_b %}<option value="{{ b.id }}">{{ b.frase }}</option>{% endfor %}
+        <option value="">--Seleccione--</option>
+        {% for b in int_b %}
+          <option value="{{ b.id }}">{{ b.frase }}</option>
+        {% endfor %}
       </select>
     </div>
     <div class="mb-2">
