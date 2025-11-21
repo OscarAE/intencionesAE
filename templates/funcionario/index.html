@@ -105,33 +105,45 @@ document.addEventListener("DOMContentLoaded", function () {
     function actualizarFormulario() {
         let textoCategoria = categoriaSelect.options[categoriaSelect.selectedIndex].text.toUpperCase();
 
+        // =======================
+        // CATEGORÍA: DIFUNTOS
+        // =======================
         if (textoCategoria.includes("DIFUN")) {
 
-            // Cambiar SOLO este label
             labelOfrece.textContent = "Por el alma y eterno descanso de:";
 
-            // Ocultar campos
             divIntBase.style.display = "none";
             divPeticiones.style.display = "none";
 
-            // Vaciar datos
             intBaseSelect.value = "";
             peticionesTextarea.value = "";
 
-            // Quitar required
             intBaseSelect.removeAttribute("required");
             peticionesTextarea.removeAttribute("required");
 
-        } else {
+        // =======================
+        // CATEGORÍA: SALUD
+        // =======================
+        } else if (textoCategoria.includes("SALUD")) {
 
-            // Restaurar label normal
-            labelOfrece.textContent = "Ofrece (nombre)";
+            labelOfrece.textContent = "Por la salud física y espiritual de:";
 
-            // Mostrar campos
             divIntBase.style.display = "block";
             divPeticiones.style.display = "block";
 
-            // Restaurar required
+            intBaseSelect.setAttribute("required", "required");
+            peticionesTextarea.setAttribute("required", "required");
+
+        // =======================
+        // OTRAS CATEGORÍAS
+        // =======================
+        } else {
+
+            labelOfrece.textContent = "Ofrece (nombre)";
+
+            divIntBase.style.display = "block";
+            divPeticiones.style.display = "block";
+
             intBaseSelect.setAttribute("required", "required");
             peticionesTextarea.setAttribute("required", "required");
         }
