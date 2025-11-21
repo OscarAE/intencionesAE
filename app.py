@@ -646,8 +646,26 @@ def funcionario_registrar():
     misa_id = int(request.form["misa_id"])
     categoria_id = int(request.form["categoria_id"])
     ofrece = request.form["ofrece"].strip()
-    int_base_id = int(request.form["int_base_id"])
-    peticiones = request.form["peticiones"].strip()[:250]
+
+    # --- Manejo de int_base_id y peticiones (caso DIFUNTOS) ---
+    raw_int_base = request.form.get("int_base_id", "")
+    raw_peticiones = request.form.get("peticiones", "").strip()[:250]
+
+    # Si la categoría es DIFUNTOS, se deben limpiar los campos
+    # ⚠️ Ajusta el número  ID_DIFUNTOS al ID correspondiente en tu BD
+    ID_DIFUNTOS = 3  # <-- CAMBIA ESTE NÚMERO SI ES OTRO
+
+    if categoria_id == ID_DIFUNTOS:
+        int_base_id = None
+        peticiones = ""
+    else:
+        # Para categorías normales, validar campos
+        if raw_int_base == "":
+            flash("Debe seleccionar la intención base.")
+            return redirect("/funcionario")
+
+        int_base_id = int(raw_int_base)
+        peticiones = raw_peticiones
 
     ahora = datetime.now().isoformat()
 
@@ -660,8 +678,9 @@ def funcionario_registrar():
         flash("Misa no encontrada")
         return redirect("/funcionario")
 
-    if not ofrece or not peticiones:
-        flash("Debe completar todos los campos")
+    # Validación general
+    if not ofrece:
+        flash("Debe completar todos los campos obligatorios.")
         return redirect("/funcionario")
 
     cur.execute("""
