@@ -647,19 +647,19 @@ def funcionario_registrar():
     categoria_id = int(request.form["categoria_id"])
     ofrece = request.form["ofrece"].strip()
 
-    # --- Manejo de int_base_id y peticiones (caso DIFUNTOS) ---
+    # IDs reales según tu tabla
+    ID_DIFUNTOS = 1
+    ID_SALUD = 2
+
     raw_int_base = request.form.get("int_base_id", "")
     raw_peticiones = request.form.get("peticiones", "").strip()[:250]
 
-    # Si la categoría es DIFUNTOS, se deben limpiar los campos
-    # ⚠️ Ajusta el número  ID_DIFUNTOS al ID correspondiente en tu BD
-    ID_DIFUNTOS = 3  # <-- CAMBIA ESTE NÚMERO SI ES OTRO
-
-    if categoria_id == ID_DIFUNTOS:
+    # ====== CATEGORÍAS QUE NO REQUIEREN int_base NI peticiones ======
+    if categoria_id in (ID_DIFUNTOS, ID_SALUD):
         int_base_id = None
         peticiones = ""
     else:
-        # Para categorías normales, validar campos
+        # ——— Categorías normales, validar que sí existan los campos ———
         if raw_int_base == "":
             flash("Debe seleccionar la intención base.")
             return redirect("/funcionario")
@@ -678,11 +678,12 @@ def funcionario_registrar():
         flash("Misa no encontrada")
         return redirect("/funcionario")
 
-    # Validación general
+    # Validación de campo 'ofrece'
     if not ofrece:
         flash("Debe completar todos los campos obligatorios.")
         return redirect("/funcionario")
 
+    # ====== Inserción ======
     cur.execute("""
         INSERT INTO intenciones(misa_id,categoria_id,ofrece,intencion_base_id,
                                 peticiones,fecha_creado,fecha_actualizado,
