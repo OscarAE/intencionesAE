@@ -40,39 +40,65 @@
   <button class="btn btn-primary">Guardar cambios</button>
   <a class="btn btn-secondary" href="/funcionario">Volver</a>
 </form>
-
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const selCat = document.getElementById("categoria_sel");
-    const labelOfrece = document.getElementById("label_ofrece");
-    const intBaseGroup = document.getElementById("int_base_group");
-    const petGroup = document.getElementById("peticiones_group");
-    const intBaseSel = document.getElementById("int_base_sel");
-    const petTxt = document.getElementById("peticiones_txt");
+document.addEventListener("DOMContentLoaded", function () {
 
-    function actualizarCampos() {
-        let texto = selCat.options[selCat.selectedIndex].text.toUpperCase();
+    const categoriaSelect = document.querySelector("select[name='categoria_id']");
+    const labelOfrece = document.querySelector("label[for='input_ofrece']") 
+                         || document.querySelector("label:contains('Ofrece')") 
+                         || document.querySelectorAll("label")[1];
 
-        if (texto.includes("DIFUNT")) {
+    const divIntBase = document.querySelector("select[name='int_base_id']").closest(".mb-2");
+    const divPeticiones = document.querySelector("textarea[name='peticiones']").closest(".mb-2");
+
+    const intBaseSelect = document.querySelector("select[name='int_base_id']");
+    const peticionesTextarea = document.querySelector("textarea[name='peticiones']");
+
+    function actualizarFormulario() {
+        if (!categoriaSelect) return;
+
+        let textoCategoria = categoriaSelect.options[categoriaSelect.selectedIndex].text.toUpperCase();
+
+        // ========= DIFUNTOS =========
+        if (textoCategoria.includes("DIFUN")) {
+
             labelOfrece.textContent = "Por el alma y eterno descanso de:";
-            intBaseGroup.style.display = "none";
-            petGroup.style.display = "none";
 
-            // vaciar campos ocultos
-            intBaseSel.value = "";
-            petTxt.value = "";
+            divIntBase.style.display = "none";
+            divPeticiones.style.display = "none";
+
+            intBaseSelect.value = "";
+            peticionesTextarea.value = "";
+
+            intBaseSelect.removeAttribute("required");
+            peticionesTextarea.removeAttribute("required");
+
+        // ========= SALUD =========
+        } else if (textoCategoria.includes("SALUD")) {
+
+            labelOfrece.textContent = "Por la salud física y espiritual de:";
+
+            divIntBase.style.display = "block";
+            divPeticiones.style.display = "block";
+
+            intBaseSelect.setAttribute("required", "required");
+            peticionesTextarea.setAttribute("required", "required");
+
+        // ========= OTRAS =========
         } else {
             labelOfrece.textContent = "Ofrece";
-            intBaseGroup.style.display = "block";
-            petGroup.style.display = "block";
+
+            divIntBase.style.display = "block";
+            divPeticiones.style.display = "block";
+
+            intBaseSelect.setAttribute("required", "required");
+            peticionesTextarea.setAttribute("required", "required");
         }
     }
 
-    selCat.addEventListener("change", actualizarCampos);
+    actualizarFormulario();
+    categoriaSelect.addEventListener("change", actualizarFormulario);
 
-    // ejecutar al cargar la página (por si ya es DIFUNTOS)
-    actualizarCampos();
 });
 </script>
-
 {% endblock %}
