@@ -647,25 +647,39 @@ def funcionario_registrar():
     categoria_id = int(request.form["categoria_id"])
     ofrece = request.form["ofrece"].strip()
 
-    # IDs reales según tu tabla
+    # IDs REALES QUE DEFINISTE
     ID_DIFUNTOS = 1
     ID_SALUD = 2
 
-    raw_int_base = request.form.get("int_base_id", "")
+    raw_int_base = request.form.get("int_base_id", "").strip()
     raw_peticiones = request.form.get("peticiones", "").strip()[:250]
 
-    # ====== CATEGORÍAS QUE NO REQUIEREN int_base NI peticiones ======
+    # ================================
+    # CATEGORÍAS SIN BASE NI PETICIONES
+    # (DIFUNTOS y SALUD)
+    # ================================
     if categoria_id in (ID_DIFUNTOS, ID_SALUD):
         int_base_id = None
         peticiones = ""
+
+    # ================================
+    # OTRAS CATEGORÍAS (NORMALES)
+    # ================================
     else:
-        # ——— Categorías normales, validar que sí existan los campos ———
         if raw_int_base == "":
             flash("Debe seleccionar la intención base.")
             return redirect("/funcionario")
 
         int_base_id = int(raw_int_base)
         peticiones = raw_peticiones
+
+    # ================================
+    # VALIDACIONES GENERALES
+    # ================================
+
+    if not ofrece:
+        flash("Debe completar todos los campos obligatorios.")
+        return redirect("/funcionario")
 
     ahora = datetime.now().isoformat()
 
@@ -678,16 +692,15 @@ def funcionario_registrar():
         flash("Misa no encontrada")
         return redirect("/funcionario")
 
-    # Validación de campo 'ofrece'
-    if not ofrece:
-        flash("Debe completar todos los campos obligatorios.")
-        return redirect("/funcionario")
-
-    # ====== Inserción ======
+    # ================================
+    # INSERT
+    # ================================
     cur.execute("""
-        INSERT INTO intenciones(misa_id,categoria_id,ofrece,intencion_base_id,
-                                peticiones,fecha_creado,fecha_actualizado,
-                                funcionario_id)
+        INSERT INTO intenciones(
+            misa_id, categoria_id, ofrece, intencion_base_id,
+            peticiones, fecha_creado, fecha_actualizado,
+            funcionario_id
+        )
         VALUES (?,?,?,?,?,?,?,?)
     """, (misa_id, categoria_id, ofrece, int_base_id, peticiones,
           ahora, ahora, session["user_id"]))
